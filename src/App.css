@@ -298,3 +298,169 @@ html, body, #root {
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
+
+/* Dashboard */
+.dashboard-page .dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+
+/* Time grid */
+.day-grid {
+  display: flex;
+  gap: 0;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.time-col {
+  width: 52px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.time-label {
+  position: absolute;
+  right: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding-left: 6px;
+}
+
+.blocks-col {
+  flex: 1;
+  position: relative;
+  border-right: 2px solid var(--border);
+  min-height: 120px;
+}
+
+.grid-empty {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Now line */
+.now-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.now-label {
+  position: absolute;
+  right: 4px;
+  top: -10px;
+  font-size: 0.65rem;
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Schedule blocks */
+.schedule-block {
+  position: absolute;
+  right: 4px;
+  left: 4px;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: opacity 0.2s;
+}
+
+.schedule-block--task {
+  background: var(--primary);
+  color: #fff;
+}
+
+.schedule-block--break {
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.schedule-block--done {
+  opacity: 0.45;
+}
+
+.schedule-block--done .block-title {
+  text-decoration: line-through;
+}
+
+.block-checkbox {
+  margin-top: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #fff;
+}
+
+.block-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.block-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-time {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+/* Upcoming panel */
+.upcoming-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.upcoming-title {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.upcoming-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.upcoming-break { color: var(--text-muted); }
+.upcoming-time { color: var(--text-muted); font-size: 0.8rem; min-width: 90px; flex-shrink: 0; }
+.upcoming-name { font-weight: 500; }
