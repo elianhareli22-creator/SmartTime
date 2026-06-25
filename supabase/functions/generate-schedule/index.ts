@@ -29,7 +29,14 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id
-    const today = new Date().toISOString().split('T')[0]
+
+    let today = new Date().toISOString().split('T')[0]
+    try {
+      const body = await req.json()
+      if (body?.date && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+        today = body.date
+      }
+    } catch { /* no body — use today */ }
 
     const [{ data: tasks, error: tasksError }, { data: profile, error: profileError }] =
       await Promise.all([
