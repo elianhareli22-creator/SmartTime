@@ -9,7 +9,7 @@ import MonthView from '../components/MonthView'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasks } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes } from '../lib/timeUtils'
-import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
+import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
@@ -25,34 +25,39 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const notifiedRef = useRef<Set<string>>(new Set())
+  const loadIdRef = useRef(0)
 
   const dayStart = profile?.day_start?.slice(0, 5) ?? '08:00'
   const dayEnd = profile?.day_end?.slice(0, 5) ?? '22:00'
 
   async function loadData(uid: string, date: string, v: View) {
+    const myId = ++loadIdRef.current
     setLoading(true)
     setError(null)
     try {
+      let nextBlocks: ScheduleBlock[]
+      let nextTasks: Task[] = []
       if (v === 'day') {
         const [dayBlocks, tasks] = await Promise.all([
           fetchBlocksForDate(uid, date),
           fetchPendingTasks(uid),
         ])
-        setBlocks(dayBlocks)
-        setPendingTasks(tasks)
+        nextBlocks = dayBlocks
+        nextTasks = tasks
       } else if (v === 'week') {
         const weekStart = getWeekStart(date)
         const weekEnd = addDays(weekStart, 6)
-        setBlocks(await fetchBlocksForRange(uid, weekStart, weekEnd))
-        setPendingTasks([])
+        nextBlocks = await fetchBlocksForRange(uid, weekStart, weekEnd)
       } else {
-        setBlocks(await fetchBlocksForRange(uid, getMonthStart(date), getMonthEnd(date)))
-        setPendingTasks([])
+        nextBlocks = await fetchBlocksForRange(uid, getMonthStart(date), getMonthEnd(date))
       }
+      if (loadIdRef.current !== myId) return // a newer load started; drop stale result
+      setBlocks(nextBlocks)
+      setPendingTasks(nextTasks)
     } catch {
-      setError('שגיאה בטעינת לוח הזמנים')
+      if (loadIdRef.current === myId) setError('שגיאה בטעינת לוח הזמנים')
     } finally {
-      setLoading(false)
+      if (loadIdRef.current === myId) setLoading(false)
     }
   }
 
@@ -69,7 +74,9 @@ export default function Dashboard() {
   const checkNotifications = useCallback(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return
     const now = nowMinutes()
+    const today = todayStr()
     blocks.forEach(block => {
+      if (block.date !== today) return // blocks may span a week/month range
       if (block.block_type === 'break') return
       if (notifiedRef.current.has(block.id)) return
       if (block.task_id && doneTaskIds.has(block.task_id)) return
@@ -163,7 +170,9 @@ export default function Dashboard() {
             doneTaskIds={doneTaskIds}
             onMarkDone={handleToggleDone}
           />
-          <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
+          {isToday(selectedDate) && (
+            <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
+          )}
         </>
       ) : view === 'week' ? (
         <WeekView

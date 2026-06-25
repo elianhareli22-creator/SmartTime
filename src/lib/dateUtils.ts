@@ -1,11 +1,21 @@
+// Serialize a Date from its LOCAL components. Never use toISOString() here:
+// it converts to UTC, which in any timezone ahead of UTC (e.g. Israel, UTC+2/3)
+// shifts the calendar date back a day on the parse→serialize round-trip.
+function fmt(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export function todayStr(): string {
-  return new Date().toISOString().split('T')[0]
+  return fmt(new Date())
 }
 
 export function addDays(date: string, n: number): string {
   const d = new Date(date + 'T00:00:00')
   d.setDate(d.getDate() + n)
-  return d.toISOString().split('T')[0]
+  return fmt(d)
 }
 
 export function getWeekStart(date: string): string {
@@ -13,7 +23,7 @@ export function getWeekStart(date: string): string {
   const day = d.getDay() // 0 = Sun
   const diff = day === 0 ? -6 : 1 - day // shift to Monday
   d.setDate(d.getDate() + diff)
-  return d.toISOString().split('T')[0]
+  return fmt(d)
 }
 
 export function getWeekDates(date: string): string[] {
@@ -29,7 +39,7 @@ export function getMonthEnd(date: string): string {
   const d = new Date(date.slice(0, 7) + '-01T00:00:00')
   d.setMonth(d.getMonth() + 1)
   d.setDate(0)
-  return d.toISOString().split('T')[0]
+  return fmt(d)
 }
 
 export function getMonthCells(date: string): (string | null)[] {
@@ -40,7 +50,7 @@ export function getMonthCells(date: string): (string | null)[] {
   const cells: (string | null)[] = Array(padding).fill(null)
   const cur = new Date(start)
   while (cur <= end) {
-    cells.push(cur.toISOString().split('T')[0])
+    cells.push(fmt(cur))
     cur.setDate(cur.getDate() + 1)
   }
   while (cells.length % 7 !== 0) cells.push(null)
