@@ -62,3 +62,22 @@ export async function markTaskDone(id: string): Promise<void> {
     .eq('id', id)
   if (error) throw error
 }
+
+export async function markTaskPending(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ status: 'pending' })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function fetchPendingTasks(userId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as Task[]
+}
