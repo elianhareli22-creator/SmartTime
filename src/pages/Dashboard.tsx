@@ -2,9 +2,10 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
 import UpcomingPanel from '../components/UpcomingPanel'
-import { fetchTodayBlocks, generateSchedule } from '../lib/queries/schedule'
-import { markTaskDone } from '../lib/queries/tasks'
+import { fetchBlocksForDate, generateSchedule } from '../lib/queries/schedule'
+import { markTaskDone, markTaskPending } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes } from '../lib/timeUtils'
+import { todayStr } from '../lib/dateUtils'
 import type { ScheduleBlock } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
@@ -24,7 +25,7 @@ export default function Dashboard() {
   async function loadBlocks() {
     if (!userId) return
     try {
-      setBlocks(await fetchTodayBlocks(userId))
+      setBlocks(await fetchBlocksForDate(userId, todayStr()))
     } catch {
       setError('שגיאה בטעינת לוח הזמנים')
     } finally {
@@ -65,7 +66,7 @@ export default function Dashboard() {
     setError(null)
     notifiedRef.current = new Set()
     try {
-      const newBlocks = await generateSchedule()
+      const newBlocks = await generateSchedule(todayStr())
       setBlocks(newBlocks)
     } catch {
       setError('שגיאה בבניית לוח הזמנים. נסה שוב.')
@@ -74,12 +75,21 @@ export default function Dashboard() {
     }
   }
 
-  async function handleMarkDone(taskId: string) {
-    setDoneTaskIds(prev => new Set([...prev, taskId]))
+  async function handleToggleDone(taskId: string) {
+    const wasDone = doneTaskIds.has(taskId)
+    setDoneTaskIds(prev => {
+      const s = new Set(prev)
+      wasDone ? s.delete(taskId) : s.add(taskId)
+      return s
+    })
     try {
-      await markTaskDone(taskId)
+      wasDone ? await markTaskPending(taskId) : await markTaskDone(taskId)
     } catch {
-      setDoneTaskIds(prev => { const s = new Set(prev); s.delete(taskId); return s })
+      setDoneTaskIds(prev => {
+        const s = new Set(prev)
+        wasDone ? s.add(taskId) : s.delete(taskId)
+        return s
+      })
     }
   }
 
@@ -107,7 +117,7 @@ export default function Dashboard() {
             dayStart={dayStart}
             dayEnd={dayEnd}
             doneTaskIds={doneTaskIds}
-            onMarkDone={handleMarkDone}
+            onMarkDone={handleToggleDone}
           />
           <UpcomingPanel blocks={blocks} doneTaskIds={doneTaskIds} />
         </>
