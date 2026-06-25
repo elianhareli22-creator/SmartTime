@@ -12,6 +12,7 @@ export default function NavBar() {
       <div className="navbar-links">
         <Link to="/dashboard">לוח זמנים</Link>
         <Link to="/tasks">משימות</Link>
+        <Link to="/chat">צ'אט</Link>
         <Link to="/profile">פרופיל</Link>
         {profile?.display_name && (
           <span className="navbar-user">{profile.display_name}</span>
