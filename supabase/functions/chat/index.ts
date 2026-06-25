@@ -64,10 +64,8 @@ const TOOL_DECLARATIONS = [
   {
     name: 'generate_schedule',
     description: "Regenerate today's AI schedule from all pending tasks",
-    parameters: {
-      type: 'object',
-      properties: {},
-    },
+    // No parameters: Gemini rejects an OBJECT schema with empty `properties`,
+    // so a zero-argument function must omit the `parameters` field entirely.
   },
 ]
 
