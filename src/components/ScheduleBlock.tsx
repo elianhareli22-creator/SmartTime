@@ -28,7 +28,7 @@ export default function ScheduleBlockView({ block, dayStartMin, onMarkDone, isDo
           type="checkbox"
           className="block-checkbox"
           checked={isDone}
-          onChange={() => !isDone && onMarkDone(block.task_id!)}
+          onChange={() => onMarkDone(block.task_id!)}
           title="סמן כהושלם"
         />
       )}
