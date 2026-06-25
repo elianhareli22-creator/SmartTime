@@ -1,0 +1,285 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const TOOL_DECLARATIONS = [
+  {
+    name: 'create_task',
+    description: 'Create a new task for the user',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        estimated_minutes: { type: 'integer' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+        deadline: { type: 'string', nullable: true },
+        fixed_start: { type: 'string', nullable: true },
+      },
+      required: ['title', 'estimated_minutes', 'priority'],
+    },
+  },
+  {
+    name: 'update_task',
+    description: 'Update fields on an existing task',
+    parameters: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string' },
+        title: { type: 'string', nullable: true },
+        estimated_minutes: { type: 'integer', nullable: true },
+        priority: { type: 'string', enum: ['low', 'medium', 'high'], nullable: true },
+        deadline: { type: 'string', nullable: true },
+        fixed_start: { type: 'string', nullable: true },
+      },
+      required: ['task_id'],
+    },
+  },
+  {
+    name: 'delete_task',
+    description: 'Delete a task by ID',
+    parameters: {
+      type: 'object',
+      properties: {
+        task_id: { type: 'string' },
+      },
+      required: ['task_id'],
+    },
+  },
+  {
+    name: 'move_block',
+    description: "Move a schedule block to a new time on today's schedule",
+    parameters: {
+      type: 'object',
+      properties: {
+        block_id: { type: 'string' },
+        new_start_time: { type: 'string', description: 'HH:MM format' },
+        new_end_time: { type: 'string', description: 'HH:MM format' },
+      },
+      required: ['block_id', 'new_start_time', 'new_end_time'],
+    },
+  },
+  {
+    name: 'generate_schedule',
+    description: "Regenerate today's AI schedule from all pending tasks",
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+]
+
+type GeminiPart = {
+  text?: string
+  functionCall?: { name: string; args: Record<string, unknown> }
+  functionResponse?: { name: string; response: Record<string, unknown> }
+}
+type GeminiContent = { role: string; parts: GeminiPart[] }
+
+type ToolCallResult = {
+  tool: string
+  args: Record<string, unknown>
+  result: 'ok' | 'error'
+  detail?: string
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    )
+    if (authError || !user) {
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    const userId = user.id
+    const { message, history, context } = await req.json()
+
+    const systemInstruction = buildSystemInstruction(context)
+
+    const contents: GeminiContent[] = [
+      ...history.map((m: { role: string; text: string }) => ({
+        role: m.role,
+        parts: [{ text: m.text }],
+      })),
+      { role: 'user', parts: [{ text: message }] },
+    ]
+
+    const geminiKey = Deno.env.get('GEMINI_API_KEY')!
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+
+    const actionsPerformed: ToolCallResult[] = []
+    let currentContents = [...contents]
+    let reply = ''
+
+    for (let round = 0; round < 5; round++) {
+      const res = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemInstruction }] },
+          contents: currentContents,
+          tools: [{ function_declarations: TOOL_DECLARATIONS }],
+        }),
+      })
+
+      if (!res.ok) throw new Error(`Gemini error: ${res.status} ${await res.text()}`)
+
+      const json = await res.json()
+      const candidate = json?.candidates?.[0]
+      if (!candidate) throw new Error('No candidate from Gemini')
+
+      const parts: GeminiPart[] = candidate.content?.parts ?? []
+      const functionCallParts = parts.filter((p) => p.functionCall)
+      const textParts = parts.filter((p) => p.text)
+
+      if (functionCallParts.length === 0) {
+        reply = textParts.map((p) => p.text ?? '').join('')
+        break
+      }
+
+      currentContents.push({ role: 'model', parts: functionCallParts })
+
+      const functionResponseParts: GeminiPart[] = []
+      for (const part of functionCallParts) {
+        const { name, args } = part.functionCall!
+        const toolResult = await executeTool(name, args, userId, supabase, authHeader, supabaseUrl)
+        actionsPerformed.push(toolResult)
+        functionResponseParts.push({
+          functionResponse: {
+            name,
+            response: { result: toolResult.result, detail: toolResult.detail ?? '' },
+          },
+        })
+      }
+
+      currentContents.push({ role: 'user', parts: functionResponseParts })
+    }
+
+    return new Response(
+      JSON.stringify({ reply, actionsPerformed }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  } catch (err) {
+    console.error(err)
+    return new Response(
+      JSON.stringify({ error: String(err) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+})
+
+function buildSystemInstruction(context: {
+  tasks: Record<string, unknown>[]
+  blocks: Record<string, unknown>[]
+  profile: Record<string, unknown>
+  nowTime: string
+  today: string
+}): string {
+  const taskLines = context.tasks.length
+    ? context.tasks.map((t) =>
+        `- [${t.id}] "${t.title}" | ${t.estimated_minutes}min | עדיפות: ${t.priority} | deadline: ${t.deadline ?? 'אין'} | fixed_start: ${t.fixed_start ?? 'אין'} | סטטוס: ${t.status}`
+      ).join('\n')
+    : 'אין משימות'
+
+  const blockLines = context.blocks.length
+    ? context.blocks.map((b) =>
+        `- [${b.id}] "${b.title}" | ${b.start_time}–${b.end_time} | סוג: ${b.block_type} | task_id: ${b.task_id ?? 'אין'}`
+      ).join('\n')
+    : 'אין בלוקים'
+
+  return `אתה עוזר תכנון יומי חכם של SmartTime. עזור למשתמש לתכנן את יומו בצורה יעילה.
+
+**היום:** ${context.today}
+**שעה נוכחית:** ${context.nowTime}
+**יום עבודה:** ${context.profile.day_start}–${context.profile.day_end}
+**שם:** ${context.profile.display_name ?? 'משתמש'}
+
+**משימות קיימות (השתמש ב-ID לפעולות):**
+${taskLines}
+
+**לוח זמנים להיום (השתמש ב-ID לפעולות):**
+${blockLines}
+
+כשמשתמש מבקש לבצע פעולה — השתמש בכלים המתאימים. לאחר ביצוע, ענה בעברית בצורה ידידותית וקצרה.`
+}
+
+async function executeTool(
+  name: string,
+  args: Record<string, unknown>,
+  userId: string,
+  supabase: ReturnType<typeof createClient>,
+  authHeader: string,
+  supabaseUrl: string,
+): Promise<ToolCallResult> {
+  try {
+    if (name === 'create_task') {
+      const { error } = await supabase.from('tasks').insert({
+        user_id: userId,
+        title: args.title,
+        estimated_minutes: args.estimated_minutes,
+        priority: args.priority,
+        deadline: args.deadline ?? null,
+        fixed_start: args.fixed_start ?? null,
+      })
+      if (error) throw error
+      return { tool: name, args, result: 'ok' }
+    }
+
+    if (name === 'update_task') {
+      const { task_id, ...fields } = args
+      const update: Record<string, unknown> = {}
+      if (fields.title !== undefined) update.title = fields.title
+      if (fields.estimated_minutes !== undefined) update.estimated_minutes = fields.estimated_minutes
+      if (fields.priority !== undefined) update.priority = fields.priority
+      if (fields.deadline !== undefined) update.deadline = fields.deadline
+      if (fields.fixed_start !== undefined) update.fixed_start = fields.fixed_start
+      const { error } = await supabase.from('tasks').update(update).eq('id', task_id).eq('user_id', userId)
+      if (error) throw error
+      return { tool: name, args, result: 'ok' }
+    }
+
+    if (name === 'delete_task') {
+      const { error } = await supabase.from('tasks').delete().eq('id', args.task_id).eq('user_id', userId)
+      if (error) throw error
+      return { tool: name, args, result: 'ok' }
+    }
+
+    if (name === 'move_block') {
+      const { error } = await supabase
+        .from('schedule_blocks')
+        .update({ start_time: args.new_start_time, end_time: args.new_end_time })
+        .eq('id', args.block_id)
+        .eq('user_id', userId)
+      if (error) throw error
+      return { tool: name, args, result: 'ok' }
+    }
+
+    if (name === 'generate_schedule') {
+      const res = await fetch(`${supabaseUrl}/functions/v1/generate-schedule`, {
+        method: 'POST',
+        headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) throw new Error('generate-schedule failed')
+      return { tool: name, args, result: 'ok' }
+    }
+
+    return { tool: name, args, result: 'error', detail: `Unknown tool: ${name}` }
+  } catch (err) {
+    return { tool: name, args, result: 'error', detail: String(err) }
+  }
+}
