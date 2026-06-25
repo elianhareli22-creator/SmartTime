@@ -15,7 +15,7 @@ export type Task = {
   deadline: string | null
   fixed_start: string | null  // "HH:MM:SS"
   status: 'pending' | 'done'
-  task_date: string  // "YYYY-MM-DD"
+  scheduled_date: string      // "YYYY-MM-DD"
   created_at: string
 }
 

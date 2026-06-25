@@ -87,8 +87,8 @@ export type Database = {
           fixed_start: string | null
           id: string
           priority: string
+          scheduled_date: string
           status: string
-          task_date: string
           title: string
           user_id: string
         }
@@ -99,8 +99,8 @@ export type Database = {
           fixed_start?: string | null
           id?: string
           priority?: string
+          scheduled_date?: string
           status?: string
-          task_date?: string
           title: string
           user_id: string
         }
@@ -111,8 +111,8 @@ export type Database = {
           fixed_start?: string | null
           id?: string
           priority?: string
+          scheduled_date?: string
           status?: string
-          task_date?: string
           title?: string
           user_id?: string
         }
