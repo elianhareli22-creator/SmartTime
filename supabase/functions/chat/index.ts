@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     ]
 
     const geminiKey = Deno.env.get('GEMINI_API_KEY')!
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${geminiKey}`
 
     const actionsPerformed: ToolCallResult[] = []
     let currentContents = [...contents]
