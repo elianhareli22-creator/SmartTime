@@ -43,11 +43,11 @@ import type { Database } from '../database.types'
 type Task = Database['public']['Tables']['tasks']['Row']
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 
-export async function getTasks(userId: string): Promise<Task[]> {
+export async function getTasks(): Promise<Task[]> {
+  // RLS enforces user isolation — no client-side userId filter needed
   const { data, error } = await supabase
     .from('tasks')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return data

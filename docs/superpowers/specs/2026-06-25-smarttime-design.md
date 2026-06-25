@@ -44,7 +44,7 @@ Browser (Vite + React TS)
                 └── upsert schedule_blocks for today → return blocks
 ```
 
-**State management:** `AuthContext` provides session + profile app-wide (one mount, one `onAuthStateChange` subscription). Each page manages its own data with `useState`/`useEffect` + direct Supabase calls. After mutations, manually re-fetch. No external state library.
+**State management:** `AuthContext` provides session + profile app-wide (one mount, one `onAuthStateChange` subscription). Each page manages its own data with `useState`/`useEffect` + typed helpers from `src/lib/queries/`. After mutations, manually re-fetch. No external state library. No raw Supabase calls in components.
 
 ---
 
