@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Tasks from './pages/Tasks'
 import Profile from './pages/Profile'
+import Chat from './pages/Chat'
 import ProtectedRoute from './components/ProtectedRoute'
 import NavBar from './components/NavBar'
 import './App.css'
@@ -34,6 +35,10 @@ export default function App() {
           <Route
             path="/profile"
             element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>}
+          />
+          <Route
+            path="/chat"
+            element={<ProtectedRoute><AppLayout><Chat /></AppLayout></ProtectedRoute>}
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
