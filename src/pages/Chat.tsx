@@ -1,40 +1,19 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { sendChatMessage, type ChatMessage } from '../lib/queries/chat'
-import { fetchTasks } from '../lib/queries/tasks'
-import { fetchBlocksForDate } from '../lib/queries/schedule'
-import type { Task, ScheduleBlock } from '../lib/types'
 
 const GREETING: ChatMessage = {
   role: 'model',
   text: 'שלום! אני כאן לעזור לך לתכנן את היום שלך. אפשר לבקש ממני להוסיף משימות, לערוך אותן, להזיז בלוקים בלוח הזמנים או לבנות מחדש את היום. במה אוכל לעזור?',
 }
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0]
-}
-
 export default function Chat() {
-  const { userId, profile } = useAuth()
+  const { userId } = useAuth()
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const tasksRef = useRef<Task[]>([])
-  const blocksRef = useRef<ScheduleBlock[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const refreshContext = useCallback(async () => {
-    if (!userId) return
-    const [tasks, blocks] = await Promise.all([
-      fetchTasks(userId),
-      fetchBlocksForDate(userId, todayStr()),
-    ])
-    tasksRef.current = tasks
-    blocksRef.current = blocks
-  }, [userId])
-
-  useEffect(() => { refreshContext() }, [refreshContext])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -42,11 +21,13 @@ export default function Chat() {
 
   async function handleSend() {
     const text = input.trim()
-    if (!text || sending || !userId || !profile) return
+    if (!text || sending || !userId) return
 
     setError(null)
     setInput('')
     const userMessage: ChatMessage = { role: 'user', text }
+    // Prior turns only (exclude the greeting and the message we're about to
+    // send) — the Edge Function appends `text` as the final user turn itself.
     const history = messages.filter((m) => m !== GREETING)
     setMessages((prev) => [...prev, userMessage])
     setSending(true)
@@ -56,19 +37,8 @@ export default function Chat() {
       const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
       const today = now.toISOString().split('T')[0]
 
-      const response = await sendChatMessage(text, [...history, userMessage], {
-        tasks: tasksRef.current,
-        blocks: blocksRef.current,
-        profile,
-        nowTime,
-        today,
-      })
-
+      const response = await sendChatMessage(text, history, nowTime, today)
       setMessages((prev) => [...prev, { role: 'model', text: response.reply }])
-
-      if (response.actionsPerformed.length > 0) {
-        await refreshContext()
-      }
     } catch (err) {
       setError('שגיאה בשליחת ההודעה. נסה שוב.')
       console.error(err)

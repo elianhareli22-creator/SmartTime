@@ -1,5 +1,4 @@
 import { supabase } from '../supabase'
-import type { Task, ScheduleBlock, Profile } from '../types'
 
 export type ChatMessage = { role: 'user' | 'model'; text: string }
 
@@ -15,21 +14,17 @@ export type ChatResponse = {
   actionsPerformed: ToolCallResult[]
 }
 
-export type ChatContext = {
-  tasks: Task[]
-  blocks: ScheduleBlock[]
-  profile: Profile
-  nowTime: string
-  today: string
-}
-
+// The Edge Function fetches tasks/blocks/profile itself (the DB is the source
+// of truth). The client only sends the message, prior conversation turns, and
+// its own local time — which the server can't reliably know.
 export async function sendChatMessage(
   message: string,
   history: ChatMessage[],
-  context: ChatContext,
+  nowTime: string,
+  today: string,
 ): Promise<ChatResponse> {
   const { data, error } = await supabase.functions.invoke('chat', {
-    body: { message, history, context },
+    body: { message, history, nowTime, today },
   })
   if (error) throw error
   return data as ChatResponse

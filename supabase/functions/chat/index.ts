@@ -105,9 +105,31 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id
-    const { message, history, context } = await req.json()
+    const { message, history, nowTime, today: clientToday } = await req.json()
+    const today = clientToday ?? new Date().toISOString().split('T')[0]
 
-    const systemInstruction = buildSystemInstruction(context)
+    // The DB is the source of truth — fetch context here rather than trusting
+    // the client to send (and not spoof) it.
+    const [
+      { data: tasks, error: tasksError },
+      { data: blocks, error: blocksError },
+      { data: profile, error: profileError },
+    ] = await Promise.all([
+      supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('schedule_blocks').select('*').eq('user_id', userId).eq('date', today).order('start_time', { ascending: true }),
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+    ])
+    if (tasksError) throw tasksError
+    if (blocksError) throw blocksError
+    if (profileError) throw profileError
+
+    const systemInstruction = buildSystemInstruction({
+      tasks: tasks ?? [],
+      blocks: blocks ?? [],
+      profile,
+      nowTime: nowTime ?? new Date().toISOString().slice(11, 16),
+      today,
+    })
 
     const contents: GeminiContent[] = [
       ...history.map((m: { role: string; text: string }) => ({
