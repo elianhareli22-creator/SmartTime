@@ -26,4 +26,5 @@ export type ScheduleBlock = {
   start_time: string  // "HH:MM:SS"
   end_time: string    // "HH:MM:SS"
   block_type: 'task' | 'break'
+  title: string
 }
