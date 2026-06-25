@@ -142,6 +142,7 @@ Rules:
       start_time: b.start_time,
       end_time: b.end_time,
       block_type: b.block_type,
+      title: b.title,
     }))
 
     const { data: inserted, error: insertError } = await supabase

@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
 import UpcomingPanel from '../components/UpcomingPanel'
@@ -84,8 +83,6 @@ export default function Dashboard() {
     }
   }
 
-  const hasTasks = blocks.some(b => b.block_type === 'task')
-
   return (
     <div className="page dashboard-page">
       <div className="dashboard-header">
@@ -103,13 +100,6 @@ export default function Dashboard() {
 
       {loading ? (
         <div className="loading-text">טוען...</div>
-      ) : !hasTasks && blocks.length === 0 ? (
-        <div className="dashboard-empty">
-          <p>אין משימות עדיין.</p>
-          <Link to="/tasks" className="btn-primary" style={{ display: 'inline-block', marginTop: '0.75rem' }}>
-            הוסף משימות
-          </Link>
-        </div>
       ) : (
         <>
           <TimeGrid
