@@ -1,5 +1,5 @@
 import type { View } from '../lib/types'
-import { addDays, getWeekDates, getMonthStart, isToday } from '../lib/dateUtils'
+import { addDays, getWeekDates, getMonthStart, isToday, todayStr } from '../lib/dateUtils'
 
 type Props = {
   date: string
@@ -42,6 +42,13 @@ export default function DateNav({ date, view, onDateChange, onViewChange }: Prop
           {view === 'day' && isToday(date) && <span className="date-nav-today"> (היום)</span>}
         </span>
         <button className="date-nav-arrow" onClick={() => onDateChange(navigate(date, view, 1))}>›</button>
+        <button
+          className="date-nav-today-btn"
+          onClick={() => onDateChange(todayStr())}
+          disabled={isToday(date)}
+        >
+          היום
+        </button>
       </div>
       <div className="view-toggle">
         {(['day', 'week', 'month'] as View[]).map(v => (

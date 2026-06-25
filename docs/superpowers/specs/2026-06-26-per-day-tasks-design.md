@@ -92,8 +92,13 @@ Redeploy: `supabase functions deploy generate-schedule`.
   to `day` view: pass `view="day"` and an `onViewChange` no-op (the week/month
   toggle is irrelevant on this page; hide it via CSS or simply ignore it).
 - Load via `fetchTasksForDate(userId, selectedDate)`; reload on date change.
-- `TaskForm.tsx` gains a **date field** defaulting to today, editable; the
-  submitted value flows through `createTask` / `updateTask` as `task_date`.
+- `TaskForm.tsx` gains a **date picker** (`<input type="date">`) defaulting to
+  today but freely settable to any **future** (or past) date, so a task can be
+  planned ahead — e.g. create today a task that belongs to next Monday. The
+  picker pre-fills with the page's `selectedDate` when one is in focus, else
+  today. The submitted value flows through `createTask` / `updateTask` as
+  `task_date`. A created future task does not appear in today's list — it
+  surfaces when you navigate to its day (or build that day).
 - `TaskList.tsx`: when the selected day is in the **past** (`selectedDate <
   todayStr()`) and a task is `pending`, show a **"move to today"** button that
   calls `moveTaskToDate(id, todayStr())` then reloads. Nothing auto-moves.

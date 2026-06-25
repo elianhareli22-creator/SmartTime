@@ -635,6 +635,24 @@ html, body, #root {
   font-weight: 400;
 }
 
+.date-nav-today-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 0.75rem;
+  height: 32px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s, opacity 0.15s;
+}
+.date-nav-today-btn:not(:disabled):hover { background: var(--bg); }
+.date-nav-today-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .view-toggle {
   display: flex;
   border: 1px solid var(--border);
