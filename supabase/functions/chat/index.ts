@@ -157,7 +157,20 @@ Deno.serve(async (req) => {
         }),
       })
 
-      if (!res.ok) throw new Error(`Gemini error: ${res.status} ${await res.text()}`)
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error(`Gemini error: ${res.status} ${errText}`)
+        const isQuota = res.status === 429 || errText.includes('RESOURCE_EXHAUSTED')
+        return new Response(
+          JSON.stringify({
+            reply: isQuota
+              ? 'שירות ה-AI אינו זמין כעת — ייתכן שאזל המכסה של מנוע ה-AI. נסה שוב מאוחר יותר.'
+              : 'שירות ה-AI נתקל בשגיאה זמנית. נסה שוב בעוד רגע.',
+            actionsPerformed,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
 
       const json = await res.json()
       const candidate = json?.candidates?.[0]
