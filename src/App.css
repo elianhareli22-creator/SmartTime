@@ -589,3 +589,68 @@ html, body, #root {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* DateNav */
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.date-nav-center {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.date-nav-arrow {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.date-nav-arrow:hover { background: var(--bg); }
+
+.date-nav-label {
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 160px;
+  text-align: center;
+}
+
+.date-nav-today {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 400;
+}
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.view-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+.view-toggle-btn:not(:last-child) { border-inline-start: 1px solid var(--border); }
+.view-toggle-btn.active { background: var(--primary); color: #fff; }
+.view-toggle-btn:not(.active):hover { background: var(--bg); }
