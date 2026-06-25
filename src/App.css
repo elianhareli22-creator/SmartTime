@@ -769,9 +769,22 @@ html, body, #root {
   right: 2px;
   border-radius: 3px;
   min-height: 4px;
+  overflow: hidden;
 }
-.week-block--task  { background: var(--primary); opacity: 0.85; }
+.week-block--task  { background: var(--primary); opacity: 0.92; }
 .week-block--break { background: var(--border); }
+
+.week-block-title {
+  display: block;
+  padding: 1px 3px;
+  font-size: 0.6rem;
+  line-height: 1.15;
+  color: #fff;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* MonthView */
 .month-view {
