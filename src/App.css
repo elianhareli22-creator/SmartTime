@@ -209,19 +209,7 @@ html, body, #root {
 .btn-danger-text { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0; }
 .btn-danger-text:hover { text-decoration: underline; }
 
-/* Form */
-.task-form {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.task-form h3 { font-size: 1rem; margin: 0; }
-
+/* Shared form classes */
 .form-field { display: flex; flex-direction: column; gap: 0.25rem; }
 .form-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
 .form-input {
@@ -238,6 +226,19 @@ html, body, #root {
 .form-error { font-size: 0.8rem; color: var(--danger); }
 
 .form-actions { display: flex; gap: 0.75rem; }
+
+/* Task form */
+.task-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-form h3 { font-size: 1rem; margin: 0; }
 
 .btn-primary {
   background: var(--primary);
@@ -275,3 +276,25 @@ html, body, #root {
 
 .empty-state { color: var(--text-muted); font-size: 0.95rem; }
 .loading-text { color: var(--text-muted); }
+
+/* Profile page */
+.profile-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.success-banner {
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
