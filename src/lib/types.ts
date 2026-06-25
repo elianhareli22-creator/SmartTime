@@ -28,3 +28,5 @@ export type ScheduleBlock = {
   block_type: 'task' | 'break'
   title: string
 }
+
+export type View = 'day' | 'week' | 'month'
