@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     const [{ data: tasks, error: tasksError }, { data: profile, error: profileError }] =
       await Promise.all([
-        supabase.from('tasks').select('*').eq('user_id', userId).eq('status', 'pending'),
+        supabase.from('tasks').select('*').eq('user_id', userId).eq('status', 'pending').eq('scheduled_date', today),
         supabase.from('profiles').select('*').eq('id', userId).single(),
       ])
 
@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     if (!tasks || tasks.length === 0) {
       await supabase.from('schedule_blocks').delete().eq('user_id', userId).eq('date', today)
-      return new Response(JSON.stringify({ blocks: [] }), {
+      return new Response(JSON.stringify({ blocks: [], unscheduled: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -159,7 +159,18 @@ Rules:
 
     if (insertError) throw insertError
 
-    return new Response(JSON.stringify({ blocks: inserted }), {
+    // Pending tasks for this day that received no block — surfaced so the UI can
+    // warn instead of silently dropping them.
+    const scheduledTaskIds = new Set(repairedBlocks.map((b) => b.task_id).filter(Boolean))
+    const unscheduled = tasks
+      .filter((t: Record<string, unknown>) => !scheduledTaskIds.has(t.id as string))
+      .map((t: Record<string, unknown>) => ({
+        id: t.id as string,
+        title: t.title as string,
+        estimated_minutes: t.estimated_minutes as number,
+      }))
+
+    return new Response(JSON.stringify({ blocks: inserted, unscheduled }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
