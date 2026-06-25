@@ -35,6 +35,8 @@
 | `src/components/TaskForm.tsx` | Modify | `scheduled_date` date field |
 | `supabase/functions/chat/index.ts` | Modify | `get_schedule` tool, date params, system prompt |
 | `src/pages/Chat.tsx` | Modify | Timezone-correct `today` |
+| `src/components/TaskList.tsx` | Modify | "Move to today" button |
+| `src/pages/Tasks.tsx` | Modify | Day nav + day-filtered tasks + move-to-today |
 
 ---
 
@@ -380,7 +382,7 @@ git commit -m "feat: date-scoped pending tasks and schedule-overflow warning on 
 
 **Interfaces:**
 - Consumes: `Task.scheduled_date` (Task 1); `todayStr()` from `src/lib/dateUtils`.
-- Produces: `createTask`/`updateTask` accept optional `scheduled_date?: string`; `TaskForm.onSubmit` data includes `scheduled_date: string`.
+- Produces: `createTask`/`updateTask` accept optional `scheduled_date?: string`; `TaskForm.onSubmit` data includes `scheduled_date: string`; `TaskForm` accepts a `defaultDate?: string` prop (defaults to `todayStr()`); `fetchTasksForDate(userId, date): Promise<Task[]>` and `moveTaskToDate(id, date): Promise<void>` query helpers (consumed by Task 7).
 
 - [ ] **Step 1: Add `scheduled_date` to the query helpers**
 
@@ -412,9 +414,34 @@ and for `updateTask` (lines 35-41 input):
 
 The bodies already spread `input` into the insert/update, so no body change is needed. (Omitting `scheduled_date` on create falls back to the DB default = today.)
 
-- [ ] **Step 2: Add the date field to `TaskForm`**
+- [ ] **Step 1b: Add `fetchTasksForDate` and `moveTaskToDate` helpers**
 
-In `src/components/TaskForm.tsx`:
+In `src/lib/queries/tasks.ts`, add (these power the Tasks-page day nav + move-to-today in Task 7). `fetchTasksForDate` returns ALL of a day's tasks (any status), unlike `fetchPendingTasksForDate`:
+
+```ts
+export async function fetchTasksForDate(userId: string, date: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('scheduled_date', date)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as Task[]
+}
+
+export async function moveTaskToDate(id: string, date: string): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ scheduled_date: date })
+    .eq('id', id)
+  if (error) throw error
+}
+```
+
+- [ ] **Step 2: Add the date field to `TaskForm` (with a `defaultDate` prop)**
+
+In `src/components/TaskForm.tsx`. The form now takes a `defaultDate` prop (the day the caller is viewing) used for new tasks; editing still uses the task's own date. Because the default is a prop (not a module constant), the form is seeded in the effect rather than from `EMPTY`.
 
 (a) Import `todayStr` at the top:
 
@@ -428,13 +455,32 @@ import { todayStr } from '../lib/dateUtils'
   scheduled_date: string
 ```
 
-(c) Add it to the `onSubmit` data type in `Props` (after `fixed_start`, line 19):
+(b2) Add a `defaultDate?: string` prop and `scheduled_date` to the `onSubmit` data type in `Props` (the `Props` type, lines 12-23):
 
 ```ts
+type Props = {
+  editTarget: Task | null
+  defaultDate?: string
+  onSubmit: (data: {
+    title: string
+    estimated_minutes: number
+    priority: 'low' | 'medium' | 'high'
+    deadline: string | null
+    fixed_start: string | null
     scheduled_date: string
+  }) => Promise<void>
+  onCancel: () => void
+  loading: boolean
+}
 ```
 
-(d) Update `EMPTY` (lines 25-31) to default to today:
+(c) Update the component signature to accept the new prop (line 33):
+
+```ts
+export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, loading }: Props) {
+```
+
+(d) Leave `EMPTY` as-is but add `scheduled_date: ''` so the type matches (the effect fills the real default):
 
 ```ts
 const EMPTY: FormData = {
@@ -443,13 +489,15 @@ const EMPTY: FormData = {
   priority: 'medium',
   deadline: '',
   fixed_start: '',
-  scheduled_date: todayStr(),
+  scheduled_date: '',
 }
 ```
 
-(e) In the `editTarget` branch of the `useEffect` (lines 39-45), populate from the task:
+(e) Rewrite the `useEffect` (lines 37-50) so both branches set `scheduled_date`, and add `defaultDate` to its dependency array:
 
 ```ts
+  useEffect(() => {
+    if (editTarget) {
       setForm({
         title: editTarget.title,
         estimated_minutes: String(editTarget.estimated_minutes),
@@ -458,9 +506,14 @@ const EMPTY: FormData = {
         fixed_start: editTarget.fixed_start ? editTarget.fixed_start.slice(0, 5) : '',
         scheduled_date: editTarget.scheduled_date,
       })
+    } else {
+      setForm({ ...EMPTY, scheduled_date: defaultDate ?? todayStr() })
+    }
+    setErrors({})
+  }, [editTarget, defaultDate])
 ```
 
-(f) In `handleSubmit` (lines 66-72), pass the field through:
+(f) In `handleSubmit`, pass the field through and reset to the default date. Replace the `onSubmit({...})` call and the trailing `setForm(EMPTY)` (lines 66-73):
 
 ```ts
     await onSubmit({
@@ -471,7 +524,11 @@ const EMPTY: FormData = {
       fixed_start: form.fixed_start || null,
       scheduled_date: form.scheduled_date,
     })
+    setForm({ ...EMPTY, scheduled_date: defaultDate ?? todayStr() })
+    setErrors({})
 ```
+
+(The original `setForm(EMPTY); setErrors({})` lines are replaced by the two lines above.)
 
 (g) Add the input field. Insert a new `field(...)` block before the `deadline` field (before line 122):
 
@@ -707,6 +764,183 @@ git commit -m "fix: chat uses timezone-safe local date as today anchor"
 
 ---
 
+## Task 7: Tasks page — day navigation + "move to today"
+
+**Files:**
+- Modify: `src/components/TaskList.tsx:7-13` (Props) and `:58-63` (action buttons)
+- Modify: `src/pages/Tasks.tsx`
+
+**Interfaces:**
+- Consumes: `fetchTasksForDate`, `moveTaskToDate` (Task 4 Step 1b); `TaskForm` `defaultDate` prop (Task 4 Step 2); existing `DateNav` component; `todayStr()`.
+- Produces: `TaskList` gains optional `onMoveToToday?: (id: string) => Promise<void>`.
+
+- [ ] **Step 1: Add "move to today" to `TaskList`**
+
+In `src/components/TaskList.tsx`, extend `Props` (lines 7-11):
+
+```ts
+type Props = {
+  tasks: Task[]
+  onEdit: (task: Task) => void
+  onDelete: (id: string) => Promise<void>
+  onMoveToToday?: (id: string) => Promise<void>
+}
+```
+
+Update the signature (line 13):
+
+```ts
+export default function TaskList({ tasks, onEdit, onDelete, onMoveToToday }: Props) {
+```
+
+In the non-confirm action branch (the `<>` containing the עריכה/מחק buttons, lines 59-62), add a move-to-today button for pending tasks:
+
+```tsx
+              <>
+                <button className="btn-link" onClick={() => onEdit(task)}>עריכה</button>
+                <button className="btn-link" onClick={() => setConfirmId(task.id)}>מחק</button>
+                {onMoveToToday && task.status === 'pending' && (
+                  <button className="btn-link" onClick={() => onMoveToToday(task.id)}>העבר להיום</button>
+                )}
+              </>
+```
+
+- [ ] **Step 2: Add day nav + day-filtered loading + move-to-today to the Tasks page**
+
+Rewrite `src/pages/Tasks.tsx` to track a `selectedDate`, render `DateNav` locked to day view, load via `fetchTasksForDate`, pass `defaultDate` to the form, and show move-to-today only when viewing a past day:
+
+```tsx
+import { useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import DateNav from '../components/DateNav'
+import TaskForm from '../components/TaskForm'
+import TaskList from '../components/TaskList'
+import { fetchTasksForDate, createTask, updateTask, deleteTask, moveTaskToDate } from '../lib/queries/tasks'
+import { todayStr } from '../lib/dateUtils'
+import type { Task } from '../lib/types'
+
+export default function Tasks() {
+  const { userId } = useAuth()
+  const [selectedDate, setSelectedDate] = useState(todayStr())
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [editTarget, setEditTarget] = useState<Task | null>(null)
+
+  async function loadTasks() {
+    if (!userId) return
+    setLoading(true)
+    try {
+      setTasks(await fetchTasksForDate(userId, selectedDate))
+    } catch {
+      setError('שגיאה בטעינת משימות')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadTasks() }, [userId, selectedDate])
+
+  async function handleSubmit(data: Parameters<typeof createTask>[1]) {
+    if (!userId) return
+    setSaving(true)
+    setError(null)
+    try {
+      if (editTarget) {
+        await updateTask(editTarget.id, data)
+        setEditTarget(null)
+      } else {
+        await createTask(userId, data)
+      }
+      await loadTasks()
+    } catch {
+      setError('שגיאה בשמירת המשימה')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setError(null)
+    try {
+      await deleteTask(id)
+      await loadTasks()
+    } catch {
+      setError('שגיאה במחיקת המשימה')
+    }
+  }
+
+  async function handleMoveToToday(id: string) {
+    setError(null)
+    try {
+      await moveTaskToDate(id, todayStr())
+      await loadTasks()
+    } catch {
+      setError('שגיאה בהעברת המשימה')
+    }
+  }
+
+  const isPast = selectedDate < todayStr()
+
+  return (
+    <div className="page tasks-page">
+      <h2>המשימות שלי</h2>
+      <DateNav
+        date={selectedDate}
+        view="day"
+        onDateChange={setSelectedDate}
+        onViewChange={() => {}}
+      />
+      {error && <div className="error-banner">{error}</div>}
+      <div className="tasks-layout">
+        <div className="tasks-list-col">
+          {loading ? (
+            <p className="loading-text">טוען...</p>
+          ) : (
+            <TaskList
+              tasks={tasks}
+              onEdit={setEditTarget}
+              onDelete={handleDelete}
+              onMoveToToday={isPast ? handleMoveToToday : undefined}
+            />
+          )}
+        </div>
+        <div className="tasks-form-col">
+          <TaskForm
+            editTarget={editTarget}
+            defaultDate={selectedDate}
+            onSubmit={handleSubmit}
+            onCancel={() => setEditTarget(null)}
+            loading={saving}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+Note: confirm `DateNav`'s prop names (`date`, `view`, `onDateChange`, `onViewChange`) against `src/components/DateNav.tsx` before finalizing; the `onViewChange={() => {}}` no-op keeps it locked to day view. If `DateNav` offers a way to hide the view toggle, prefer that.
+
+- [ ] **Step 3: Verify build + lint**
+
+Run: `npm run build && npm run lint`
+Expected: both PASS.
+
+- [ ] **Step 4: Verify in the browser**
+
+On `/tasks`: the day nav switches days and the list shows only that day's tasks; the form's date field defaults to the viewed day. Navigate to a past day with a pending task → "העבר להיום" appears; click it → the task moves to today (disappears from the past day, appears under today). On today/future days the button is absent.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/TaskList.tsx src/pages/Tasks.tsx
+git commit -m "feat: Tasks page day navigation and move-to-today"
+```
+
+---
+
 ## Self-Review
 
 **Spec coverage:**
@@ -716,7 +950,8 @@ git commit -m "fix: chat uses timezone-safe local date as today anchor"
 - TaskForm `scheduled_date` + query helpers → Task 4. ✓
 - chat `get_schedule`, date params, system prompt → Task 5. ✓
 - Chat.tsx timezone fix → Task 6. ✓
-- Out-of-scope items (carryover, shared selected-date, recurring) → not planned. ✓
+- Folded-in (from prior per-day-tasks plan, approved): Tasks-page day nav + "move to today" → Task 7; `fetchTasksForDate`/`moveTaskToDate` → Task 4 Step 1b; `TaskForm` `defaultDate` prop → Task 4 Step 2. ✓
+- Out-of-scope items (carryover, shared dashboard↔chat selected-date, recurring) → not planned. ✓
 
 **Placeholder scan:** No "TBD"/"handle edge cases"/"similar to" — every code step shows the code. The one CSS step gives concrete properties and notes mirroring `.error-banner` for exact palette tokens. ✓
 

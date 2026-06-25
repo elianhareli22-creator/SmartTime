@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-06-26)** by `2026-06-26-multi-date-tasks-and-agentic-chat.md`, which folds in this plan's unique pieces (Tasks-page day nav + move-to-today). Do not execute this file.
+
 # Per-Day Tasks Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
