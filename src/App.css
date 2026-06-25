@@ -157,3 +157,8 @@ html, body, #root {
     gap: 0.75rem;
   }
 }
+
+.navbar-user {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
