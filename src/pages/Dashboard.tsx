@@ -2,17 +2,24 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
 import UpcomingPanel from '../components/UpcomingPanel'
-import { fetchBlocksForDate, generateSchedule } from '../lib/queries/schedule'
-import { markTaskDone, markTaskPending } from '../lib/queries/tasks'
+import DateNav from '../components/DateNav'
+import PendingTasksPanel from '../components/PendingTasksPanel'
+import WeekView from '../components/WeekView'
+import MonthView from '../components/MonthView'
+import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
+import { markTaskDone, markTaskPending, fetchPendingTasks } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes } from '../lib/timeUtils'
-import { todayStr } from '../lib/dateUtils'
-import type { ScheduleBlock } from '../lib/types'
+import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
+import type { ScheduleBlock, Task, View } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
 
 export default function Dashboard() {
   const { userId, profile } = useAuth()
+  const [selectedDate, setSelectedDate] = useState(todayStr())
+  const [view, setView] = useState<View>('day')
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([])
+  const [pendingTasks, setPendingTasks] = useState<Task[]>([])
   const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -22,10 +29,26 @@ export default function Dashboard() {
   const dayStart = profile?.day_start?.slice(0, 5) ?? '08:00'
   const dayEnd = profile?.day_end?.slice(0, 5) ?? '22:00'
 
-  async function loadBlocks() {
-    if (!userId) return
+  async function loadData(uid: string, date: string, v: View) {
+    setLoading(true)
+    setError(null)
     try {
-      setBlocks(await fetchBlocksForDate(userId, todayStr()))
+      if (v === 'day') {
+        const [dayBlocks, tasks] = await Promise.all([
+          fetchBlocksForDate(uid, date),
+          fetchPendingTasks(uid),
+        ])
+        setBlocks(dayBlocks)
+        setPendingTasks(tasks)
+      } else if (v === 'week') {
+        const weekStart = getWeekStart(date)
+        const weekEnd = addDays(weekStart, 6)
+        setBlocks(await fetchBlocksForRange(uid, weekStart, weekEnd))
+        setPendingTasks([])
+      } else {
+        setBlocks(await fetchBlocksForRange(uid, getMonthStart(date), getMonthEnd(date)))
+        setPendingTasks([])
+      }
     } catch {
       setError('שגיאה בטעינת לוח הזמנים')
     } finally {
@@ -33,7 +56,9 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => { loadBlocks() }, [userId])
+  useEffect(() => {
+    if (userId) loadData(userId, selectedDate, view)
+  }, [userId, selectedDate, view])
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -62,12 +87,14 @@ export default function Dashboard() {
   }, [checkNotifications])
 
   async function handleGenerate() {
+    if (!userId) return
     setGenerating(true)
     setError(null)
     notifiedRef.current = new Set()
     try {
-      const newBlocks = await generateSchedule(todayStr())
+      const newBlocks = await generateSchedule(selectedDate)
       setBlocks(newBlocks)
+      setPendingTasks(await fetchPendingTasks(userId))
     } catch {
       setError('שגיאה בבניית לוח הזמנים. נסה שוב.')
     } finally {
@@ -93,34 +120,65 @@ export default function Dashboard() {
     }
   }
 
+  function handleSelectDate(date: string) {
+    setSelectedDate(date)
+    setView('day')
+  }
+
+  const dayBlocks = view === 'day' ? blocks : []
+
   return (
     <div className="page dashboard-page">
       <div className="dashboard-header">
-        <h2>לוח הזמנים שלי — היום</h2>
-        <button
-          className="btn-primary"
-          onClick={handleGenerate}
-          disabled={generating}
-        >
-          {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי ✨'}
-        </button>
+        <h2>לוח הזמנים שלי</h2>
+        {view === 'day' && (
+          <button
+            className="btn-primary"
+            onClick={handleGenerate}
+            disabled={generating}
+          >
+            {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי ✨'}
+          </button>
+        )}
       </div>
+
+      <DateNav
+        date={selectedDate}
+        view={view}
+        onDateChange={setSelectedDate}
+        onViewChange={setView}
+      />
 
       {error && <div className="error-banner">{error}</div>}
 
       {loading ? (
         <div className="loading-text">טוען...</div>
-      ) : (
+      ) : view === 'day' ? (
         <>
+          <PendingTasksPanel tasks={pendingTasks} />
           <TimeGrid
-            blocks={blocks}
+            blocks={dayBlocks}
             dayStart={dayStart}
             dayEnd={dayEnd}
             doneTaskIds={doneTaskIds}
             onMarkDone={handleToggleDone}
           />
-          <UpcomingPanel blocks={blocks} doneTaskIds={doneTaskIds} />
+          <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
         </>
+      ) : view === 'week' ? (
+        <WeekView
+          blocks={blocks}
+          selectedDate={selectedDate}
+          dayStart={dayStart}
+          dayEnd={dayEnd}
+          onSelectDate={handleSelectDate}
+        />
+      ) : (
+        <MonthView
+          blocks={blocks}
+          selectedDate={selectedDate}
+          onSelectDate={handleSelectDate}
+        />
       )}
     </div>
   )
