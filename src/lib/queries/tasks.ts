@@ -5,9 +5,9 @@ export async function createTask(
   userId: string,
   input: {
     title: string
+    description?: string | null
     estimated_minutes: number
     priority: 'low' | 'medium' | 'high'
-    deadline?: string | null
     fixed_start?: string | null
     scheduled_date?: string
   }
@@ -25,9 +25,9 @@ export async function updateTask(
   id: string,
   input: {
     title?: string
+    description?: string | null
     estimated_minutes?: number
     priority?: 'low' | 'medium' | 'high'
-    deadline?: string | null
     fixed_start?: string | null
     scheduled_date?: string
   }
@@ -103,4 +103,14 @@ export async function updateTaskFixedStart(
     .update({ fixed_start })
     .eq('id', id)
   if (error) throw error
+}
+
+export async function fetchTaskById(id: string): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data as Task
 }

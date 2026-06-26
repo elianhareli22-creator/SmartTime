@@ -1141,6 +1141,8 @@ html, body, #root {
   overflow: hidden;
 }
 .week-block--task  { background: var(--block-task); opacity: 0.9; }
+.week-block--break { background: var(--border); border-inline-start: 3px solid var(--muted); }
+.week-block--break .week-block-title { color: var(--ink); }
 
 .week-block-title {
   display: block;
@@ -1215,6 +1217,17 @@ html, body, #root {
 }
 
 .month-blocks { display: flex; flex-direction: column; gap: 2px; }
+
+.month-block--break {
+  background: var(--border);
+  border-inline-start: 3px solid var(--muted);
+  color: var(--muted);
+  font-size: 0.62rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 .month-block {
   background: var(--block-task);
@@ -1463,7 +1476,7 @@ html, body, #root {
 .break-popover-close {
   position: absolute;
   inset-block-start: 0.4rem;
-  inset-inline-start: 0.4rem;
+  inset-inline-end: 0.4rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -1471,4 +1484,12 @@ html, body, #root {
   font-size: 0.9rem;
   line-height: 1;
   padding: 0.1rem 0.3rem;
+}
+
+/* ── TaskForm conflict warning ───────────────────────── */
+
+.form-warning {
+  font-size: 0.78rem;
+  color: var(--cta);
+  margin-block-start: 0.25rem;
 }

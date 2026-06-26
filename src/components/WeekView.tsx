@@ -67,7 +67,7 @@ export default function WeekView({ blocks, selectedDate, dayStart, dayEnd, onSel
                 return (
                   <div
                     key={block.id}
-                    className="week-block week-block--task"
+                    className={`week-block week-block--${block.block_type}`}
                     style={{ top: `${top}px`, height: `${height}px` }}
                     title={block.title}
                   >

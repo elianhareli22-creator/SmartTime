@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import type { Task } from '../lib/types'
+import type { Task, BreakTemplate } from '../lib/types'
 import { todayStr } from '../lib/dateUtils'
+import { timeStrToMinutes } from '../lib/timeUtils'
 
 type FormData = {
   title: string
   estimated_minutes: string
   priority: 'low' | 'medium' | 'high'
-  deadline: string
   fixed_start: string
   scheduled_date: string
 }
@@ -14,11 +14,11 @@ type FormData = {
 type Props = {
   editTarget: Task | null
   defaultDate?: string
+  breakTemplates: BreakTemplate[]
   onSubmit: (data: {
     title: string
     estimated_minutes: number
     priority: 'low' | 'medium' | 'high'
-    deadline: string | null
     fixed_start: string | null
     scheduled_date: string
   }) => Promise<void>
@@ -30,12 +30,41 @@ const EMPTY: FormData = {
   title: '',
   estimated_minutes: '30',
   priority: 'medium',
-  deadline: '',
   fixed_start: '',
   scheduled_date: '',
 }
 
-export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, loading }: Props) {
+function findBreakConflict(
+  fixedStart: string,
+  estimatedMinutes: number,
+  scheduledDate: string,
+  breakTemplates: BreakTemplate[],
+): BreakTemplate | null {
+  if (!fixedStart || !scheduledDate || isNaN(estimatedMinutes) || estimatedMinutes <= 0) return null
+  const taskStart = timeStrToMinutes(fixedStart)
+  const taskEnd = taskStart + estimatedMinutes
+  const d = new Date(scheduledDate + 'T12:00:00')
+  const dow = d.getDay()
+  for (const t of breakTemplates) {
+    let applies = false
+    switch (t.recurrence_type) {
+      case 'daily': applies = true; break
+      case 'weekly': applies = t.recurrence_day_of_week === dow; break
+      case 'date': applies = t.recurrence_date === scheduledDate; break
+      case 'date_range':
+        applies = !!t.recurrence_date_start && !!t.recurrence_date_end &&
+          t.recurrence_date_start <= scheduledDate && scheduledDate <= t.recurrence_date_end
+        break
+    }
+    if (!applies) continue
+    const bs = timeStrToMinutes(t.start_time)
+    const be = timeStrToMinutes(t.end_time)
+    if (taskStart < be && taskEnd > bs) return t
+  }
+  return null
+}
+
+export default function TaskForm({ editTarget, defaultDate, breakTemplates, onSubmit, onCancel, loading }: Props) {
   const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
@@ -45,7 +74,6 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
         title: editTarget.title,
         estimated_minutes: String(editTarget.estimated_minutes),
         priority: editTarget.priority as 'low' | 'medium' | 'high',
-        deadline: editTarget.deadline ? editTarget.deadline.slice(0, 16) : '',
         fixed_start: editTarget.fixed_start ? editTarget.fixed_start.slice(0, 5) : '',
         scheduled_date: editTarget.scheduled_date ?? todayStr(),
       })
@@ -74,7 +102,6 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
       title: form.title.trim(),
       estimated_minutes: parseInt(form.estimated_minutes),
       priority: form.priority,
-      deadline: form.deadline || null,
       fixed_start: form.fixed_start || null,
       scheduled_date: form.scheduled_date,
     })
@@ -82,15 +109,23 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
     setErrors({})
   }
 
-  function field(key: keyof FormData, label: string, input: React.ReactNode) {
+  function field(key: keyof FormData, label: string, input: React.ReactNode, extra?: React.ReactNode) {
     return (
       <div className="form-field">
         <label className="form-label">{label}</label>
         {input}
         {errors[key] && <span className="form-error">{errors[key]}</span>}
+        {extra}
       </div>
     )
   }
+
+  const breakConflict = findBreakConflict(
+    form.fixed_start,
+    parseInt(form.estimated_minutes),
+    form.scheduled_date,
+    breakTemplates,
+  )
 
   return (
     <form onSubmit={handleSubmit} className="task-form">
@@ -136,22 +171,18 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
         />
       )}
 
-      {field('deadline', 'דדליין (אופציונלי)',
-        <input
-          className="form-input"
-          type="datetime-local"
-          value={form.deadline}
-          onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
-        />
-      )}
-
-      {field('fixed_start', 'שעת התחלה קבועה (אופציונלי)',
+      {field('fixed_start', 'שעת התחלה',
         <input
           className="form-input"
           type="time"
           value={form.fixed_start}
           onChange={e => setForm(f => ({ ...f, fixed_start: e.target.value }))}
-        />
+        />,
+        breakConflict && (
+          <span className="form-warning">
+            שעה זו חופפת להפסקת {breakConflict.title} ({breakConflict.start_time.slice(0, 5)}–{breakConflict.end_time.slice(0, 5)})
+          </span>
+        )
       )}
 
       <div className="form-actions">

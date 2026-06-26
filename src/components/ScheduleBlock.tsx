@@ -1,8 +1,10 @@
+import { useRef } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import type { ScheduleBlock } from '../lib/types'
 import { timeStrToMinutes, formatTimeRange } from '../lib/timeUtils'
 
 const PX_PER_MIN = 1.5
+const BLOCK_GAP = 2
 
 type Props = {
   block: ScheduleBlock
@@ -11,20 +13,23 @@ type Props = {
   isDone: boolean
   dragDeltaY?: number
   isCollision?: boolean
+  onBlockClick?: (block: ScheduleBlock) => void
 }
 
 export default function ScheduleBlockView({
-  block, dayStartMin, onMarkDone, isDone, dragDeltaY, isCollision,
+  block, dayStartMin, onMarkDone, isDone, dragDeltaY, isCollision, onBlockClick,
 }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
     data: { block },
   })
 
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
+
   const startMin = timeStrToMinutes(block.start_time)
   const endMin = timeStrToMinutes(block.end_time)
-  const top = (startMin - dayStartMin) * PX_PER_MIN
-  const height = Math.max((endMin - startMin) * PX_PER_MIN, 24)
+  const top = (startMin - dayStartMin) * PX_PER_MIN + BLOCK_GAP
+  const height = Math.max((endMin - startMin) * PX_PER_MIN - BLOCK_GAP, 22)
 
   const style: React.CSSProperties = {
     top: `${top}px`,
@@ -39,11 +44,30 @@ export default function ScheduleBlockView({
     } : { cursor: 'grab' }),
   }
 
+  function handlePointerDown(e: React.PointerEvent) {
+    pointerDownPos.current = { x: e.clientX, y: e.clientY }
+    // Forward to dnd-kit so drag still works
+    if (listeners?.onPointerDown) {
+      (listeners.onPointerDown as (e: React.PointerEvent) => void)(e)
+    }
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    if (!pointerDownPos.current) return
+    const dx = e.clientX - pointerDownPos.current.x
+    const dy = e.clientY - pointerDownPos.current.y
+    if (Math.sqrt(dx * dx + dy * dy) < 5) {
+      onBlockClick?.(block)
+    }
+    pointerDownPos.current = null
+  }
+
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
       {...attributes}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       className={`schedule-block${isDone ? ' schedule-block--done' : ''}${isDragging && isCollision ? ' schedule-block--forbidden' : ''}`}
       style={style}
     >

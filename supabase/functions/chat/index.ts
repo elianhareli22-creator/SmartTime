@@ -16,7 +16,6 @@ const TOOL_DECLARATIONS = [
         estimated_minutes: { type: 'integer', nullable: true, description: 'משך המשימה בדקות. מלא רק כאשר user_gave_duration=true. אל תנחש ואל תעתיק ממשימות קיימות.' },
         user_gave_duration: { type: 'boolean', description: 'true רק אם המשתמש ציין במפורש כמה זמן המשימה תיקח (למשל "חצי שעה", "45 דקות"). שעת התחלה (כמו "ב-19") אינה משך! אם המשתמש לא נקב במשך מפורש — false.' },
         priority: { type: 'string', enum: ['low', 'medium', 'high'] },
-        deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD; defaults to today' },
       },
@@ -33,7 +32,6 @@ const TOOL_DECLARATIONS = [
         title: { type: 'string', nullable: true },
         estimated_minutes: { type: 'integer', nullable: true },
         priority: { type: 'string', enum: ['low', 'medium', 'high'], nullable: true },
-        deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
       },
@@ -243,7 +241,7 @@ function buildSystemInstruction(context: {
 }): string {
   const taskLines = context.tasks.length
     ? context.tasks.map((t) =>
-        `- [${t.id}] "${t.title}" | ${t.estimated_minutes}min | עדיפות: ${t.priority} | תאריך: ${t.scheduled_date} | deadline: ${t.deadline ?? 'אין'} | fixed_start: ${t.fixed_start ?? 'אין'} | סטטוס: ${t.status}`
+        `- [${t.id}] "${t.title}" | ${t.estimated_minutes}min | עדיפות: ${t.priority} | תאריך: ${t.scheduled_date} | fixed_start: ${t.fixed_start ?? 'אין'} | סטטוס: ${t.status}`
       ).join('\n')
     : 'אין משימות'
 
@@ -322,7 +320,6 @@ async function executeTool(
         title: args.title,
         estimated_minutes: args.estimated_minutes,
         priority: args.priority,
-        deadline: args.deadline ?? null,
         fixed_start: args.fixed_start ?? null,
       }
       if (args.scheduled_date) insert.scheduled_date = args.scheduled_date
@@ -337,7 +334,6 @@ async function executeTool(
       if (fields.title !== undefined) update.title = fields.title
       if (fields.estimated_minutes !== undefined) update.estimated_minutes = fields.estimated_minutes
       if (fields.priority !== undefined) update.priority = fields.priority
-      if (fields.deadline !== undefined) update.deadline = fields.deadline
       if (fields.fixed_start !== undefined) update.fixed_start = fields.fixed_start
       if (fields.scheduled_date !== undefined) update.scheduled_date = fields.scheduled_date
 
