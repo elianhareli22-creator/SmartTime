@@ -140,11 +140,11 @@ export default function Dashboard() {
         <h2>לוח הזמנים שלי</h2>
         {view === 'day' && (
           <button
-            className="btn-primary"
+            className="btn-cta"
             onClick={handleGenerate}
             disabled={generating}
           >
-            {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי ✨'}
+            {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי'}
           </button>
         )}
       </div>
