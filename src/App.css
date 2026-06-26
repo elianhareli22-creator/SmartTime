@@ -119,6 +119,11 @@ html, body, #root {
   padding: 2rem 1.25rem;
 }
 
+.main-content--full {
+  max-width: 100%;
+  padding: 0;
+}
+
 .page h2 {
   font-size: 1.35rem;
   font-weight: 700;
@@ -535,7 +540,7 @@ html, body, #root {
 
 .now-label {
   position: absolute;
-  right: 5px;
+  inset-inline-end: 5px;
   top: -9px;
   font-size: 0.62rem;
   color: var(--cta);
@@ -647,8 +652,6 @@ html, body, #root {
   display: flex;
   flex-direction: row;
   height: calc(100vh - 52px);
-  margin: -2rem -1.25rem;
-  padding: 0;
   overflow: hidden;
 }
 

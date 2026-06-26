@@ -9,11 +9,11 @@ import ProtectedRoute from './components/ProtectedRoute'
 import NavBar from './components/NavBar'
 import './App.css'
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({ children, fullWidth }: { children: React.ReactNode; fullWidth?: boolean }) {
   return (
     <>
       <NavBar />
-      <main className="main-content">{children}</main>
+      <main className={fullWidth ? 'main-content main-content--full' : 'main-content'}>{children}</main>
     </>
   )
 }
@@ -38,7 +38,7 @@ export default function App() {
           />
           <Route
             path="/chat"
-            element={<ProtectedRoute><AppLayout><Chat /></AppLayout></ProtectedRoute>}
+            element={<ProtectedRoute><AppLayout fullWidth><Chat /></AppLayout></ProtectedRoute>}
           />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

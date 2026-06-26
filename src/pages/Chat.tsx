@@ -12,7 +12,7 @@ import {
 import type { ChatSession, ChatMessage } from '../lib/types'
 import { todayStr } from '../lib/dateUtils'
 
-const STORAGE_KEY = 'chat_session_id'
+const storageKey = (uid: string) => `chat_session_id_${uid}`
 
 const GREETING: WireMessage = {
   role: 'model',
@@ -50,7 +50,7 @@ export default function Chat() {
   useEffect(() => {
     if (!userId) return
 
-    const storedId = localStorage.getItem(STORAGE_KEY)
+    const storedId = localStorage.getItem(storageKey(userId!))
     if (storedId) {
       fetchMessages(storedId)
         .then((msgs) => {
@@ -58,10 +58,10 @@ export default function Chat() {
             setCurrentSessionId(storedId)
             setActiveMessages([GREETING, ...msgs.map(toWireMessage)])
           } else {
-            localStorage.removeItem(STORAGE_KEY)
+            localStorage.removeItem(storageKey(userId!))
           }
         })
-        .catch(() => localStorage.removeItem(STORAGE_KEY))
+        .catch(() => localStorage.removeItem(storageKey(userId!)))
     }
 
     fetchSessions(userId).then(setSessions).catch(console.error)
@@ -89,7 +89,8 @@ export default function Chat() {
       const msgs = await fetchMessages(sessionId)
       setViewedMessages(msgs.map(toWireMessage))
     } catch {
-      setViewedMessages([])
+      setViewingSessionId(null)
+      setError('שגיאה בטעינת השיחה. נסה שוב.')
     } finally {
       setLoadingViewed(false)
     }
@@ -97,7 +98,7 @@ export default function Chat() {
 
   async function handleNewChat() {
     if (!userId) return
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey(userId!))
     setCurrentSessionId(null)
     setActiveMessages([GREETING])
     setViewingSessionId(null)
@@ -110,7 +111,6 @@ export default function Chat() {
     if (!text || sending || !userId) return
 
     setError(null)
-    setInput('')
     setSending(true)
 
     let sessionId = currentSessionId
@@ -119,10 +119,11 @@ export default function Chat() {
     try {
       if (!sessionId) {
         sessionId = await createSession(userId)
-        localStorage.setItem(STORAGE_KEY, sessionId)
+        localStorage.setItem(storageKey(userId!), sessionId)
         setCurrentSessionId(sessionId)
       }
 
+      setInput('')
       await appendMessage(sessionId, 'user', text)
 
       // history = prior turns only; the edge function appends `text` itself
@@ -146,6 +147,7 @@ export default function Chat() {
         fetchSessions(userId).then(setSessions).catch(console.error)
       }
     } catch (err) {
+      setInput(text)
       setError('שגיאה בשליחת ההודעה. נסה שוב.')
       console.error(err)
     } finally {
