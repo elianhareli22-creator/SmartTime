@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import Spinner from '../components/Spinner'
 import {
   createSession,
   appendMessage,
@@ -44,6 +45,7 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadingInitial, setLoadingInitial] = useState(true)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -51,20 +53,24 @@ export default function Chat() {
     if (!userId) return
 
     const storedId = localStorage.getItem(storageKey(userId!))
-    if (storedId) {
-      fetchMessages(storedId)
-        .then((msgs) => {
-          if (msgs.length > 0) {
-            setCurrentSessionId(storedId)
-            setActiveMessages([GREETING, ...msgs.map(toWireMessage)])
-          } else {
-            localStorage.removeItem(storageKey(userId!))
-          }
-        })
-        .catch(() => localStorage.removeItem(storageKey(userId!)))
-    }
 
-    fetchSessions(userId).then(setSessions).catch(console.error)
+    const sessionPromise = storedId
+      ? fetchMessages(storedId)
+          .then((msgs) => {
+            if (msgs.length > 0) {
+              setCurrentSessionId(storedId)
+              setActiveMessages([GREETING, ...msgs.map(toWireMessage)])
+            } else {
+              localStorage.removeItem(storageKey(userId!))
+            }
+          })
+          .catch(() => localStorage.removeItem(storageKey(userId!)))
+      : Promise.resolve()
+
+    Promise.all([
+      fetchSessions(userId).then(setSessions).catch(console.error),
+      sessionPromise,
+    ]).finally(() => setLoadingInitial(false))
   }, [userId])
 
   useEffect(() => {
@@ -193,46 +199,52 @@ export default function Chat() {
       </aside>
 
       <div className="chat-main">
-        <div className="chat-messages">
-          {loadingViewed ? (
-            <div className="chat-loading">טוען...</div>
-          ) : (
-            displayMessages.map((m, i) => (
-              <div key={i} className={`chat-bubble chat-bubble--${m.role}`}>
-                {m.text}
-              </div>
-            ))
-          )}
-          {sending && (
-            <div className="chat-bubble chat-bubble--model chat-bubble--typing">
-              <span></span><span></span><span></span>
-            </div>
-          )}
-          {error && <div className="chat-error">{error}</div>}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {isViewingPast ? (
-          <div className="chat-readonly-notice">שיחה זו הסתיימה</div>
+        {loadingInitial ? (
+          <div className="content-loader"><Spinner /></div>
         ) : (
-          <div className="chat-input-area">
-            <textarea
-              className="chat-input"
-              rows={1}
-              placeholder="הקלד הודעה..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={sending}
-            />
-            <button
-              className="chat-send-btn"
-              onClick={handleSend}
-              disabled={sending || !input.trim()}
-            >
-              שלח
-            </button>
-          </div>
+          <>
+            <div className="chat-messages">
+              {loadingViewed ? (
+                <div className="chat-loading">טוען...</div>
+              ) : (
+                displayMessages.map((m, i) => (
+                  <div key={i} className={`chat-bubble chat-bubble--${m.role}`}>
+                    {m.text}
+                  </div>
+                ))
+              )}
+              {sending && (
+                <div className="chat-bubble chat-bubble--model chat-bubble--typing">
+                  <span></span><span></span><span></span>
+                </div>
+              )}
+              {error && <div className="chat-error">{error}</div>}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {isViewingPast ? (
+              <div className="chat-readonly-notice">שיחה זו הסתיימה</div>
+            ) : (
+              <div className="chat-input-area">
+                <textarea
+                  className="chat-input"
+                  rows={1}
+                  placeholder="הקלד הודעה..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={sending}
+                />
+                <button
+                  className="chat-send-btn"
+                  onClick={handleSend}
+                  disabled={sending || !input.trim()}
+                >
+                  שלח
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
