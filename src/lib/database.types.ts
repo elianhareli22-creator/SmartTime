@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      break_templates: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          recurrence_date: string | null
+          recurrence_date_end: string | null
+          recurrence_date_start: string | null
+          recurrence_day_of_week: number | null
+          recurrence_type: string
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          recurrence_date?: string | null
+          recurrence_date_end?: string | null
+          recurrence_date_start?: string | null
+          recurrence_day_of_week?: number | null
+          recurrence_type: string
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          recurrence_date?: string | null
+          recurrence_date_end?: string | null
+          recurrence_date_start?: string | null
+          recurrence_day_of_week?: number | null
+          recurrence_type?: string
+          start_time?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -135,7 +177,7 @@ export type Database = {
       tasks: {
         Row: {
           created_at: string
-          deadline: string | null
+          description: string | null
           estimated_minutes: number
           fixed_start: string | null
           id: string
@@ -147,7 +189,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          deadline?: string | null
+          description?: string | null
           estimated_minutes?: number
           fixed_start?: string | null
           id?: string
@@ -159,7 +201,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          deadline?: string | null
+          description?: string | null
           estimated_minutes?: number
           fixed_start?: string | null
           id?: string

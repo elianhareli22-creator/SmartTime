@@ -10,9 +10,9 @@ export type Task = {
   id: string
   user_id: string
   title: string
+  description: string | null
   estimated_minutes: number
   priority: 'low' | 'medium' | 'high'
-  deadline: string | null
   fixed_start: string | null  // "HH:MM:SS"
   status: 'pending' | 'done'
   scheduled_date: string      // "YYYY-MM-DD"
@@ -44,5 +44,19 @@ export type ChatMessage = {
   session_id: string
   role: 'user' | 'model'
   text: string
+  created_at: string
+}
+
+export type BreakTemplate = {
+  id: string
+  user_id: string
+  title: string
+  start_time: string              // "HH:MM:SS"
+  end_time: string                // "HH:MM:SS"
+  recurrence_type: 'date' | 'date_range' | 'daily' | 'weekly'
+  recurrence_date: string | null          // "YYYY-MM-DD"
+  recurrence_date_start: string | null    // "YYYY-MM-DD"
+  recurrence_date_end: string | null      // "YYYY-MM-DD"
+  recurrence_day_of_week: number | null   // 0=Sun…6=Sat
   created_at: string
 }
