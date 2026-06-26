@@ -69,7 +69,9 @@ export default function NavBar() {
                 <p className="bell-empty">אין התראות</p>
               ) : (
                 <ul className="bell-list">
-                  {notifications.map(n => (
+                  {[...notifications]
+                    .sort((a, b) => b.firedAt.getTime() - a.firedAt.getTime())
+                    .map(n => (
                     <li key={n.id} className={`bell-item${n.read ? '' : ' bell-item--unread'}`}>
                       <span className="bell-item-title">{n.title}</span>
                       <span className="bell-item-meta">
