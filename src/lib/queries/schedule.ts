@@ -1,6 +1,12 @@
 import { supabase } from '../supabase'
 import type { ScheduleBlock } from '../types'
 
+export type UnscheduledTask = {
+  id: string
+  title: string
+  estimated_minutes: number
+}
+
 export async function fetchBlocksForDate(userId: string, date: string): Promise<ScheduleBlock[]> {
   const { data, error } = await supabase
     .from('schedule_blocks')
@@ -29,10 +35,13 @@ export async function fetchBlocksForRange(
   return data as ScheduleBlock[]
 }
 
-export async function generateSchedule(date: string): Promise<ScheduleBlock[]> {
+export async function generateSchedule(
+  date: string,
+): Promise<{ blocks: ScheduleBlock[]; unscheduled: UnscheduledTask[] }> {
   const { data, error } = await supabase.functions.invoke('generate-schedule', {
     body: { date },
   })
   if (error) throw error
-  return (data as { blocks: ScheduleBlock[] }).blocks
+  const res = data as { blocks: ScheduleBlock[] | null; unscheduled: UnscheduledTask[] | null }
+  return { blocks: res.blocks ?? [], unscheduled: res.unscheduled ?? [] }
 }

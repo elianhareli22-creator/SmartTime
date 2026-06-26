@@ -7,7 +7,8 @@ import PendingTasksPanel from '../components/PendingTasksPanel'
 import WeekView from '../components/WeekView'
 import MonthView from '../components/MonthView'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
-import { markTaskDone, markTaskPending, fetchPendingTasks } from '../lib/queries/tasks'
+import type { UnscheduledTask } from '../lib/queries/schedule'
+import { markTaskDone, markTaskPending, fetchPendingTasksForDate } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes } from '../lib/timeUtils'
 import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [unscheduled, setUnscheduled] = useState<UnscheduledTask[]>([])
   const notifiedRef = useRef<Set<string>>(new Set())
   const loadIdRef = useRef(0)
 
@@ -34,13 +36,14 @@ export default function Dashboard() {
     const myId = ++loadIdRef.current
     setLoading(true)
     setError(null)
+    setUnscheduled([])
     try {
       let nextBlocks: ScheduleBlock[]
       let nextTasks: Task[] = []
       if (v === 'day') {
         const [dayBlocks, tasks] = await Promise.all([
           fetchBlocksForDate(uid, date),
-          fetchPendingTasks(uid),
+          fetchPendingTasksForDate(uid, date),
         ])
         nextBlocks = dayBlocks
         nextTasks = tasks
@@ -99,9 +102,10 @@ export default function Dashboard() {
     setError(null)
     notifiedRef.current = new Set()
     try {
-      const newBlocks = await generateSchedule(selectedDate)
+      const { blocks: newBlocks, unscheduled: missed } = await generateSchedule(selectedDate)
       setBlocks(newBlocks)
-      setPendingTasks(await fetchPendingTasks(userId))
+      setUnscheduled(missed)
+      setPendingTasks(await fetchPendingTasksForDate(userId, selectedDate))
     } catch {
       setError('שגיאה בבניית לוח הזמנים. נסה שוב.')
     } finally {
@@ -157,6 +161,11 @@ export default function Dashboard() {
       />
 
       {error && <div className="error-banner">{error}</div>}
+      {unscheduled.length > 0 && (
+        <div className="warning-banner">
+          {unscheduled.length} משימות לא נכנסו ללוח הזמנים: {unscheduled.map(t => t.title).join('، ')}
+        </div>
+      )}
 
       {loading ? (
         <div className="loading-text">טוען...</div>

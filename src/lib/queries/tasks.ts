@@ -84,6 +84,18 @@ export async function fetchPendingTasks(userId: string): Promise<Task[]> {
   return data as Task[]
 }
 
+export async function fetchPendingTasksForDate(userId: string, date: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .eq('scheduled_date', date)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as Task[]
+}
+
 export async function fetchTasksForDate(userId: string, date: string): Promise<Task[]> {
   const { data, error } = await supabase
     .from('tasks')
