@@ -163,7 +163,7 @@ export default function Dashboard() {
       {error && <div className="error-banner">{error}</div>}
       {unscheduled.length > 0 && (
         <div className="warning-banner">
-          {unscheduled.length} משימות לא נכנסו ללוח הזמנים: {unscheduled.map(t => t.title).join('، ')}
+          {unscheduled.length} משימות לא נכנסו ללוח הזמנים: {unscheduled.map(t => t.title).join(', ')}
         </div>
       )}
 
