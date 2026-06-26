@@ -13,13 +13,14 @@ const TOOL_DECLARATIONS = [
       type: 'object',
       properties: {
         title: { type: 'string' },
-        estimated_minutes: { type: 'integer', nullable: true, description: 'משך המשימה בדקות. אל תנחש — אם המשתמש לא ציין משך, אל תקרא ל-create_task; שאל אותו תחילה כמה דקות.' },
+        estimated_minutes: { type: 'integer', nullable: true, description: 'משך המשימה בדקות. מלא רק כאשר user_gave_duration=true. אל תנחש ואל תעתיק ממשימות קיימות.' },
+        user_gave_duration: { type: 'boolean', description: 'true רק אם המשתמש ציין במפורש כמה זמן המשימה תיקח (למשל "חצי שעה", "45 דקות"). שעת התחלה (כמו "ב-19") אינה משך! אם המשתמש לא נקב במשך מפורש — false.' },
         priority: { type: 'string', enum: ['low', 'medium', 'high'] },
         deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD; defaults to today' },
       },
-      required: ['title', 'priority'],
+      required: ['title', 'priority', 'user_gave_duration'],
     },
   },
   {
@@ -271,7 +272,7 @@ ${blockLines}
 
 **שעות:** ביטוי של שעה ("ב-12:30", "בשעה 9", "ב-14:00") ממופה ל-\`fixed_start\` בפורמט HH:MM. **אל תשמיט שעה שהמשתמש ציין** — אם ציין שעה, חובה למלא \`fixed_start\`.
 
-**משך חובה (estimated_minutes):** אם המשתמש לא ציין משך — **שאל אותו לפני קריאה ל-\`create_task\`**. אל תמציא משך ואל תשתמש בערך ברירת מחדל.
+**משך חובה (estimated_minutes):** משך הוא שדה חובה שחייב להגיע מהמשתמש. בקריאה ל-\`create_task\` עליך להעביר \`user_gave_duration\`: שים \`true\` רק אם המשתמש נקב במפורש במשך (למשל "שעה", "45 דקות"); אחרת \`false\`. **שעת התחלה (כמו "ב-19", "ב-12:30") היא לא משך.** אם המשתמש לא נקב במשך — **שאל "כמה זמן זה ייקח?" ואל תיצור את המשימה עד שיענה.** לעולם אל תנחש משך ואל תעתיק אותו ממשימות קיימות ברשימה. דוגמה: "מחר יש לי מסעדה ב-19 עם עידן" → יש שעה (19:00) אבל אין משך → \`user_gave_duration=false\`, שאל על המשך.
 
 **יצירת משימה ללא שעה:** כאשר המשתמש מבקש ליצור משימה ולא ציין שעה — **שאל כיצד להמשיך**, עם שלוש אפשרויות:
 1. המשתמש בוחר שעה → הגדר \`fixed_start\` לשעה שנבחרה → המשימה תופיע אוטומטית בלוח.
@@ -292,12 +293,12 @@ async function executeTool(
 ): Promise<ToolCallResult> {
   try {
     if (name === 'create_task') {
-      if (args.estimated_minutes == null) {
+      if (args.user_gave_duration !== true || args.estimated_minutes == null) {
         return {
           tool: name,
           args,
           result: 'error',
-          detail: 'חסר משך (estimated_minutes). אל תיצור את המשימה — שאל את המשתמש כמה דקות המשימה צפויה לקחת, ואז נסה שוב.',
+          detail: 'המשתמש לא ציין משך מפורש. אסור ליצור את המשימה. שאל אותו "כמה זמן זה ייקח?" ורק אחרי שיענה במשך מפורש קרא שוב עם user_gave_duration=true.',
         }
       }
       const insert: Record<string, unknown> = {
