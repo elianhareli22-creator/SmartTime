@@ -16,30 +16,33 @@ export default function NavBar() {
   const { profile } = useAuth()
   const { notifications, unreadCount, markAllRead, dismissNotification } = useNotifications()
   const [open, setOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
+  const navRef = useRef<HTMLElement>(null)
 
   const handleSignOut = () => supabase.auth.signOut()
 
   useEffect(() => {
-    if (!open) return
+    if (!open && !menuOpen) return
     function handleOutsideClick(e: MouseEvent) {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setOpen(false)
+        setMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [open])
+  }, [open, menuOpen])
 
   function handleBellClick() {
     setOpen(prev => {
-      if (prev) markAllRead()   // closing → mark read
+      if (prev) markAllRead()
       return !prev
     })
   }
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" ref={navRef}>
       <div className="navbar-start">
         <span className="navbar-brand">SmartTime</span>
         {profile?.display_name && (
@@ -92,6 +95,8 @@ export default function NavBar() {
           )}
         </div>
       </div>
+
+      {/* Desktop navigation — hidden on mobile */}
       <div className="navbar-links">
         <Link to="/dashboard">לוח זמנים</Link>
         <Link to="/tasks">משימות</Link>
@@ -99,6 +104,29 @@ export default function NavBar() {
         <Link to="/profile">פרופיל</Link>
         <button onClick={handleSignOut} className="btn-link">יציאה</button>
       </div>
+
+      {/* Mobile hamburger button — hidden on desktop */}
+      <button
+        className={`navbar-hamburger${menuOpen ? ' navbar-hamburger--open' : ''}`}
+        onClick={() => setMenuOpen(prev => !prev)}
+        aria-label="תפריט ניווט"
+        aria-expanded={menuOpen}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="navbar-mobile-menu">
+          <Link to="/dashboard" onClick={() => setMenuOpen(false)}>לוח זמנים</Link>
+          <Link to="/tasks" onClick={() => setMenuOpen(false)}>משימות</Link>
+          <Link to="/chat" onClick={() => setMenuOpen(false)}>צ'אט</Link>
+          <Link to="/profile" onClick={() => setMenuOpen(false)}>פרופיל</Link>
+          <button onClick={() => { setMenuOpen(false); handleSignOut() }} className="navbar-mobile-signout">יציאה</button>
+        </div>
+      )}
     </nav>
   )
 }
