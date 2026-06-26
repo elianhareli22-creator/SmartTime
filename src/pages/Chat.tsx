@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { sendChatMessage, type ChatMessage } from '../lib/queries/chat'
+import { todayStr } from '../lib/dateUtils'
 
 const GREETING: ChatMessage = {
   role: 'model',
@@ -35,7 +36,7 @@ export default function Chat() {
     try {
       const now = new Date()
       const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-      const today = now.toISOString().split('T')[0]
+      const today = todayStr()
 
       const response = await sendChatMessage(text, history, nowTime, today)
       setMessages((prev) => [...prev, { role: 'model', text: response.reply }])
