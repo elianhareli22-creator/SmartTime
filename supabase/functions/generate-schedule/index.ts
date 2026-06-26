@@ -74,7 +74,7 @@ Tasks: ${JSON.stringify(taskList)}
 Rules:
 - Place high-priority and deadline-bound tasks earlier in the day
 - Tasks with fixed_start MUST start at exactly that time (block_type "task")
-- Add 10-minute breaks (block_type "break", task_id null, title "הפסקה") after tasks of 60+ minutes
+- Do NOT add breaks — schedule tasks back-to-back. Every block must be block_type "task"
 - Every block must fit within ${dayStart}–${dayEnd}
 - Return ONLY a JSON object with a "blocks" array`
 
