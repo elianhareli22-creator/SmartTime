@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationProvider } from './context/NotificationContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Tasks from './pages/Tasks'
@@ -21,28 +22,30 @@ function AppLayout({ children, fullWidth }: { children: React.ReactNode; fullWid
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>}
-          />
-          <Route
-            path="/tasks"
-            element={<ProtectedRoute><AppLayout><Tasks /></AppLayout></ProtectedRoute>}
-          />
-          <Route
-            path="/profile"
-            element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>}
-          />
-          <Route
-            path="/chat"
-            element={<ProtectedRoute><AppLayout fullWidth><Chat /></AppLayout></ProtectedRoute>}
-          />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <NotificationProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/dashboard"
+              element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>}
+            />
+            <Route
+              path="/tasks"
+              element={<ProtectedRoute><AppLayout><Tasks /></AppLayout></ProtectedRoute>}
+            />
+            <Route
+              path="/profile"
+              element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>}
+            />
+            <Route
+              path="/chat"
+              element={<ProtectedRoute><AppLayout fullWidth><Chat /></AppLayout></ProtectedRoute>}
+            />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
   )
 }
