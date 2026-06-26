@@ -567,8 +567,8 @@ html, body, #root {
 
 .schedule-block {
   position: absolute;
-  right: 4px;
-  left: 4px;
+  right: 6px;
+  left: 6px;
   border-radius: var(--radius);
   padding: 4px 8px;
   display: flex;
@@ -950,6 +950,31 @@ html, body, #root {
 }
 .date-nav-today-btn:disabled { opacity: 0.35; cursor: default; }
 
+.date-nav-calendar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.date-nav-calendar-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+.date-nav-calendar-btn:hover { opacity: 1; }
+
+.date-nav-hidden-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .view-toggle {
   display: flex;
   border: 1px solid var(--border);
@@ -1205,10 +1230,176 @@ html, body, #root {
 
 .month-overflow { font-size: 0.62rem; color: var(--muted); padding-inline-end: 2px; }
 
+.form-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: inherit;
+}
+
+.block-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.block-modal {
+  position: fixed;
+  z-index: 201;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  min-width: 260px;
+  max-width: 340px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+
+.block-modal-close {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.block-modal-close:hover { color: var(--ink); }
+
+.block-modal-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-block-end: 0.75rem;
+  padding-inline-end: 1.5rem;
+}
+
+.block-modal-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.block-modal-time {
+  font-size: 0.825rem;
+  color: var(--muted);
+}
+
+.block-modal-description {
+  font-size: 0.875rem;
+  color: var(--ink);
+  margin-block-end: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.block-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
 /* ── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 600px) {
   .main-content { padding: 1.25rem 0.875rem; }
   .navbar { padding: 0 1rem; }
   .navbar-links { gap: 0; }
+}
+
+/* ── Breaks section (Profile) ─────────────────────────── */
+
+.breaks-section {
+  margin-block-start: 2rem;
+}
+
+.breaks-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-block-end: 1rem;
+  color: var(--ink);
+}
+
+.break-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.break-template-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-block-end: 1px solid var(--border);
+}
+
+.break-template-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.break-template-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.break-template-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.break-template-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.btn-icon:hover {
+  color: var(--ink);
+  background: var(--border);
+}
+
+.btn-icon--danger:hover {
+  color: var(--danger);
+  background: #fee2e2;
+}
+
+.break-form {
+  margin-block-start: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--paper);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.break-form-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.break-form-row .form-field {
+  flex: 1;
+}
+
+.break-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-start: 0.25rem;
 }
