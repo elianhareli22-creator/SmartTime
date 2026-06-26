@@ -281,7 +281,7 @@ ${blockLines}
 
 **הצגה בלוח הזמנים:** משימה עם \`fixed_start\` מופיעה אוטומטית בלוח ביום שלה — **אין צורך ב-"בנה את היום"**. משימה **ללא** \`fixed_start\` מוצגת רק לאחר הפעלת "בנה את היום". ציין זאת בתשובה למשתמש.
 
-**הזזת בלוקים:** אם \`move_block\` מחזיר התנגשות (result=error עם פירוט חפיפה) — הבלוק לא הוזז. דווח למשתמש בדיוק עם מי יש חפיפה ושאל כיצד להמשיך; אל תדווח שהזזת בהצלחה.`
+**התנגשויות זמן:** אם כלי כלשהו (\`move_block\`, \`create_task\`, \`update_task\`) מחזיר result=error עם פירוט חפיפה — הפעולה **לא בוצעה**. דווח למשתמש בדיוק עם איזו משימה/בלוק יש חפיפה ובאילו שעות, ושאל כיצד להמשיך (שעה אחרת / בכל זאת / לבטל). **לעולם אל תדווח שהזזת/יצרת בהצלחה כשהוחזרה התנגשות.**`
 }
 
 async function executeTool(
@@ -301,6 +301,20 @@ async function executeTool(
           args,
           result: 'error',
           detail: 'המשתמש לא ציין משך מפורש. אסור ליצור את המשימה. שאל אותו "כמה זמן זה ייקח?" ורק אחרי שיענה במשך מפורש קרא שוב עם user_gave_duration=true.',
+        }
+      }
+      if (args.fixed_start != null) {
+        const date = (args.scheduled_date as string) ?? today
+        const conflicts = await fixedTaskConflicts(
+          supabase, userId, date, args.fixed_start as string, args.estimated_minutes as number, null,
+        )
+        if (conflicts.length > 0) {
+          return {
+            tool: name,
+            args,
+            result: 'error',
+            detail: `התנגשות: ${(args.fixed_start as string).slice(0, 5)} חופף ל-${conflicts.join(', ')}. אל תיצור את המשימה — דווח למשתמש על ההתנגשות ושאל כיצד להמשיך (שעה אחרת / בכל זאת ליצור / לבטל).`,
+          }
         }
       }
       const insert: Record<string, unknown> = {
@@ -326,6 +340,31 @@ async function executeTool(
       if (fields.deadline !== undefined) update.deadline = fields.deadline
       if (fields.fixed_start !== undefined) update.fixed_start = fields.fixed_start
       if (fields.scheduled_date !== undefined) update.scheduled_date = fields.scheduled_date
+
+      // If the task will have a fixed_start, check for overlap with other
+      // fixed-time tasks that day before applying the change.
+      const { data: existing, error: exErr } = await supabase
+        .from('tasks')
+        .select('fixed_start, estimated_minutes, scheduled_date')
+        .eq('id', task_id)
+        .eq('user_id', userId)
+        .single()
+      if (exErr) throw exErr
+      const effStart = (fields.fixed_start !== undefined ? fields.fixed_start : existing.fixed_start) as string | null
+      const effDate = (fields.scheduled_date !== undefined ? fields.scheduled_date : existing.scheduled_date) as string
+      const effDur = (fields.estimated_minutes !== undefined ? fields.estimated_minutes : existing.estimated_minutes) as number
+      if (effStart != null) {
+        const conflicts = await fixedTaskConflicts(supabase, userId, effDate, effStart, effDur, task_id as string)
+        if (conflicts.length > 0) {
+          return {
+            tool: name,
+            args,
+            result: 'error',
+            detail: `התנגשות: ${effStart.slice(0, 5)} חופף ל-${conflicts.join(', ')}. אל תעדכן את המשימה — דווח למשתמש על ההתנגשות ושאל כיצד להמשיך (שעה אחרת / בכל זאת / לבטל).`,
+          }
+        }
+      }
+
       const { error } = await supabase.from('tasks').update(update).eq('id', task_id).eq('user_id', userId)
       if (error) throw error
       return { tool: name, args, result: 'ok' }
@@ -415,4 +454,43 @@ async function executeTool(
 function hhmmToMin(t: string): number {
   const [h, m] = t.split(':')
   return parseInt(h) * 60 + parseInt(m)
+}
+
+function minToHHMM(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+// Other fixed-time pending tasks on the same day whose window overlaps
+// [startHHMM, startHHMM + durationMin]. Returns human-readable descriptions.
+async function fixedTaskConflicts(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  scheduledDate: string,
+  startHHMM: string,
+  durationMin: number,
+  excludeTaskId: string | null,
+): Promise<string[]> {
+  const start = hhmmToMin(startHHMM)
+  const end = start + (durationMin || 0)
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, fixed_start, estimated_minutes')
+    .eq('user_id', userId)
+    .eq('scheduled_date', scheduledDate)
+    .eq('status', 'pending')
+    .not('fixed_start', 'is', null)
+  if (error) throw error
+  return (data ?? [])
+    .filter((t) => t.id !== excludeTaskId)
+    .filter((t) => {
+      const s = hhmmToMin(t.fixed_start as string)
+      const e = s + ((t.estimated_minutes as number) ?? 0)
+      return start < e && s < end
+    })
+    .map((t) => {
+      const s = hhmmToMin(t.fixed_start as string)
+      return `"${t.title}" (${minToHHMM(s)}–${minToHHMM(s + ((t.estimated_minutes as number) ?? 0))})`
+    })
 }
