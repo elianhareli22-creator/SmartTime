@@ -17,6 +17,7 @@ const TOOL_DECLARATIONS = [
         priority: { type: 'string', enum: ['low', 'medium', 'high'] },
         deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true },
+        scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD; defaults to today' },
       },
       required: ['title', 'estimated_minutes', 'priority'],
     },
@@ -33,6 +34,7 @@ const TOOL_DECLARATIONS = [
         priority: { type: 'string', enum: ['low', 'medium', 'high'], nullable: true },
         deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true },
+        scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
       },
       required: ['task_id'],
     },
@@ -62,10 +64,25 @@ const TOOL_DECLARATIONS = [
     },
   },
   {
+    name: 'get_schedule',
+    description: "Read the schedule blocks for a specific date (use for any date other than today)",
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'YYYY-MM-DD' },
+      },
+      required: ['date'],
+    },
+  },
+  {
     name: 'generate_schedule',
-    description: "Regenerate today's AI schedule from all pending tasks",
-    // No parameters: Gemini rejects an OBJECT schema with empty `properties`,
-    // so a zero-argument function must omit the `parameters` field entirely.
+    description: "Regenerate the AI schedule from pending tasks for a given date (default: today)",
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'YYYY-MM-DD; defaults to today' },
+      },
+    },
   },
 ]
 
@@ -225,7 +242,7 @@ function buildSystemInstruction(context: {
 }): string {
   const taskLines = context.tasks.length
     ? context.tasks.map((t) =>
-        `- [${t.id}] "${t.title}" | ${t.estimated_minutes}min | עדיפות: ${t.priority} | deadline: ${t.deadline ?? 'אין'} | fixed_start: ${t.fixed_start ?? 'אין'} | סטטוס: ${t.status}`
+        `- [${t.id}] "${t.title}" | ${t.estimated_minutes}min | עדיפות: ${t.priority} | תאריך: ${t.scheduled_date} | deadline: ${t.deadline ?? 'אין'} | fixed_start: ${t.fixed_start ?? 'אין'} | סטטוס: ${t.status}`
       ).join('\n')
     : 'אין משימות'
 
@@ -248,7 +265,9 @@ ${taskLines}
 **לוח זמנים להיום (השתמש ב-ID לפעולות):**
 ${blockLines}
 
-כשמשתמש מבקש לבצע פעולה — השתמש בכלים המתאימים. לאחר ביצוע, ענה בעברית בצורה ידידותית וקצרה.`
+כשמשתמש מבקש לבצע פעולה — השתמש בכלים המתאימים. לאחר ביצוע, ענה בעברית בצורה ידידותית וקצרה.
+
+**תאריכים:** "היום" הוא ${context.today}. פענח ביטויים יחסיים ("מחר", "מחרתיים", "יום חמישי") ביחס אליו והעבר אותם לכלים בפורמט YYYY-MM-DD. הבלוקים המוצגים למעלה הם של היום בלבד — לכל תאריך אחר קרא תחילה ל-get_schedule כדי לקבל את הבלוקים וה-IDs שלהם לפני עריכה.`
 }
 
 async function executeTool(
@@ -261,14 +280,16 @@ async function executeTool(
 ): Promise<ToolCallResult> {
   try {
     if (name === 'create_task') {
-      const { error } = await supabase.from('tasks').insert({
+      const insert: Record<string, unknown> = {
         user_id: userId,
         title: args.title,
         estimated_minutes: args.estimated_minutes,
         priority: args.priority,
         deadline: args.deadline ?? null,
         fixed_start: args.fixed_start ?? null,
-      })
+      }
+      if (args.scheduled_date) insert.scheduled_date = args.scheduled_date
+      const { error } = await supabase.from('tasks').insert(insert)
       if (error) throw error
       return { tool: name, args, result: 'ok' }
     }
@@ -281,6 +302,7 @@ async function executeTool(
       if (fields.priority !== undefined) update.priority = fields.priority
       if (fields.deadline !== undefined) update.deadline = fields.deadline
       if (fields.fixed_start !== undefined) update.fixed_start = fields.fixed_start
+      if (fields.scheduled_date !== undefined) update.scheduled_date = fields.scheduled_date
       const { error } = await supabase.from('tasks').update(update).eq('id', task_id).eq('user_id', userId)
       if (error) throw error
       return { tool: name, args, result: 'ok' }
@@ -302,10 +324,25 @@ async function executeTool(
       return { tool: name, args, result: 'ok' }
     }
 
+    if (name === 'get_schedule') {
+      const { data, error } = await supabase
+        .from('schedule_blocks')
+        .select('id, title, start_time, end_time, block_type, task_id')
+        .eq('user_id', userId)
+        .eq('date', args.date)
+        .order('start_time', { ascending: true })
+      if (error) throw error
+      const detail = (data && data.length)
+        ? data.map((b) => `[${b.id}] "${b.title}" ${b.start_time}–${b.end_time} (${b.block_type}) task_id:${b.task_id ?? 'אין'}`).join('\n')
+        : 'אין בלוקים בתאריך זה'
+      return { tool: name, args, result: 'ok', detail }
+    }
+
     if (name === 'generate_schedule') {
       const res = await fetch(`${supabaseUrl}/functions/v1/generate-schedule`, {
         method: 'POST',
         headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+        body: JSON.stringify(args.date ? { date: args.date } : {}),
       })
       if (!res.ok) throw new Error('generate-schedule failed')
       return { tool: name, args, result: 'ok' }
