@@ -759,14 +759,14 @@ html, body, #root {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--ink);
-  border-bottom-right-radius: var(--radius-sm);
+  border-end-start-radius: var(--radius-sm);
 }
 
 .chat-bubble--user {
   align-self: flex-end;
   background: var(--accent);
   color: #fff;
-  border-bottom-left-radius: var(--radius-sm);
+  border-end-end-radius: var(--radius-sm);
 }
 
 .chat-bubble--typing {
