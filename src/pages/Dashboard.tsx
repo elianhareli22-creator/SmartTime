@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
 import DateNav from '../components/DateNav'
@@ -11,11 +11,9 @@ import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateSchedu
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate, updateTaskFixedStart } from '../lib/queries/tasks'
 import { getBreakTemplates } from '../lib/queries/breaks'
-import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
+import { timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
 import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View, BreakTemplate } from '../lib/types'
-
-const NOTIFY_WINDOW_MIN = 5
 
 export default function Dashboard() {
   const { userId, profile } = useAuth()
@@ -32,7 +30,6 @@ export default function Dashboard() {
   const [unscheduled, setUnscheduled] = useState<UnscheduledTask[]>([])
   const [modalBlock, setModalBlock] = useState<ScheduleBlock | null>(null)
   const [modalTask, setModalTask] = useState<Task | null>(null)
-  const notifiedRef = useRef<Set<string>>(new Set())
   const loadIdRef = useRef(0)
 
   const dayStart = profile?.day_start?.slice(0, 5) ?? '08:00'
@@ -78,38 +75,10 @@ export default function Dashboard() {
     if (userId) getBreakTemplates(userId).then(setBreakTemplates).catch(() => {})
   }, [userId])
 
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-  }, [])
-
-  const checkNotifications = useCallback(() => {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return
-    const now = nowMinutes()
-    const today = todayStr()
-    blocks.forEach(block => {
-      if (block.date !== today) return // blocks may span a week/month range
-      if (notifiedRef.current.has(block.id)) return
-      if (block.task_id && doneTaskIds.has(block.task_id)) return
-      const startMin = timeStrToMinutes(block.start_time)
-      if (startMin - now <= NOTIFY_WINDOW_MIN && startMin - now > 0) {
-        new Notification('SmartTime', { body: `${block.title} מתחיל בקרוב` })
-        notifiedRef.current.add(block.id)
-      }
-    })
-  }, [blocks, doneTaskIds])
-
-  useEffect(() => {
-    const id = setInterval(checkNotifications, 60_000)
-    return () => clearInterval(id)
-  }, [checkNotifications])
-
   async function handleGenerate() {
     if (!userId) return
     setGenerating(true)
     setError(null)
-    notifiedRef.current = new Set()
     try {
       const { blocks: newBlocks, unscheduled: missed } = await generateSchedule(selectedDate)
       setBlocks(newBlocks)
