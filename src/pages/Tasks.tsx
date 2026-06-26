@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import DateNav from '../components/DateNav'
 import TaskForm from '../components/TaskForm'
 import TaskList from '../components/TaskList'
+import Spinner from '../components/Spinner'
 import { fetchTasksForDate, createTask, updateTask, deleteTask, moveTaskToDate } from '../lib/queries/tasks'
 import { generateSchedule } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
@@ -119,7 +120,7 @@ export default function Tasks() {
       <div className="tasks-layout">
         <div className="tasks-list-col">
           {loading ? (
-            <p className="loading-text">טוען...</p>
+            <div className="content-loader"><Spinner /></div>
           ) : (
             <TaskList
               tasks={tasks}
