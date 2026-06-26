@@ -6,9 +6,9 @@ import DateNav from '../components/DateNav'
 import PendingTasksPanel from '../components/PendingTasksPanel'
 import WeekView from '../components/WeekView'
 import MonthView from '../components/MonthView'
-import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
+import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateScheduleBlock } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
-import { markTaskDone, markTaskPending, fetchPendingTasksForDate } from '../lib/queries/tasks'
+import { markTaskDone, markTaskPending, fetchPendingTasksForDate, updateTaskFixedStart } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
 import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
@@ -130,6 +130,27 @@ export default function Dashboard() {
     }
   }
 
+  async function handleBlockMove(blockId: string, newStart: string, newEnd: string) {
+    const prevBlocks = blocks
+    setBlocks(prev => prev.map(b => b.id === blockId
+      ? { ...b, start_time: newStart, end_time: newEnd }
+      : b
+    ))
+    try {
+      await updateScheduleBlock(blockId, newStart, newEnd)
+      const movedBlock = prevBlocks.find(b => b.id === blockId)
+      if (movedBlock?.task_id) {
+        const task = pendingTasks.find(t => t.id === movedBlock.task_id)
+        if (task?.fixed_start != null) {
+          await updateTaskFixedStart(movedBlock.task_id, newStart)
+        }
+      }
+    } catch {
+      setBlocks(prevBlocks)
+      setError('שגיאה בעדכון לוח הזמנים')
+    }
+  }
+
   function handleSelectDate(date: string) {
     setSelectedDate(date)
     setView('day')
@@ -193,6 +214,7 @@ export default function Dashboard() {
             dayEnd={dayEnd}
             doneTaskIds={doneTaskIds}
             onMarkDone={handleToggleDone}
+            onBlockMove={handleBlockMove}
           />
           {isToday(selectedDate) && (
             <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
