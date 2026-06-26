@@ -629,7 +629,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 52px);
-  margin: -2rem -1.25rem 0;
+  margin: -2rem -1.25rem; /* negate all four sides of .main-content padding */
   padding: 0;
 }
 
@@ -640,6 +640,12 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+/* push messages to the bottom when there are few of them */
+.chat-messages::before {
+  content: '';
+  flex: 1;
 }
 
 .chat-bubble {
