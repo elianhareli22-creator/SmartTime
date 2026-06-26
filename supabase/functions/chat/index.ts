@@ -13,13 +13,13 @@ const TOOL_DECLARATIONS = [
       type: 'object',
       properties: {
         title: { type: 'string' },
-        estimated_minutes: { type: 'integer' },
+        estimated_minutes: { type: 'integer', nullable: true, description: 'משך המשימה בדקות. אל תנחש — אם המשתמש לא ציין משך, אל תקרא ל-create_task; שאל אותו תחילה כמה דקות.' },
         priority: { type: 'string', enum: ['low', 'medium', 'high'] },
         deadline: { type: 'string', nullable: true },
         fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD; defaults to today' },
       },
-      required: ['title', 'estimated_minutes', 'priority'],
+      required: ['title', 'priority'],
     },
   },
   {
@@ -292,6 +292,14 @@ async function executeTool(
 ): Promise<ToolCallResult> {
   try {
     if (name === 'create_task') {
+      if (args.estimated_minutes == null) {
+        return {
+          tool: name,
+          args,
+          result: 'error',
+          detail: 'חסר משך (estimated_minutes). אל תיצור את המשימה — שאל את המשתמש כמה דקות המשימה צפויה לקחת, ואז נסה שוב.',
+        }
+      }
       const insert: Record<string, unknown> = {
         user_id: userId,
         title: args.title,
