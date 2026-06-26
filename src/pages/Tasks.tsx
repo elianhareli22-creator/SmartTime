@@ -4,6 +4,8 @@ import DateNav from '../components/DateNav'
 import TaskForm from '../components/TaskForm'
 import TaskList from '../components/TaskList'
 import { fetchTasksForDate, createTask, updateTask, deleteTask, moveTaskToDate } from '../lib/queries/tasks'
+import { generateSchedule } from '../lib/queries/schedule'
+import type { UnscheduledTask } from '../lib/queries/schedule'
 import { todayStr } from '../lib/dateUtils'
 import type { Task } from '../lib/types'
 
@@ -15,6 +17,9 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editTarget, setEditTarget] = useState<Task | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [unscheduled, setUnscheduled] = useState<UnscheduledTask[]>([])
+  const [buildMsg, setBuildMsg] = useState<string | null>(null)
 
   async function loadTasks() {
     if (!userId) return
@@ -69,11 +74,33 @@ export default function Tasks() {
     }
   }
 
+  async function handleBuild() {
+    if (!userId) return
+    setGenerating(true)
+    setError(null)
+    setBuildMsg(null)
+    setUnscheduled([])
+    try {
+      const { unscheduled: missed } = await generateSchedule(selectedDate)
+      setUnscheduled(missed)
+      setBuildMsg('לוח הזמנים נבנה. צפה בו בלוח הזמנים.')
+    } catch {
+      setError('שגיאה בבניית לוח הזמנים. נסה שוב.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const isPast = selectedDate < todayStr()
 
   return (
     <div className="page tasks-page">
-      <h2>המשימות שלי</h2>
+      <div className="dashboard-header">
+        <h2>המשימות שלי</h2>
+        <button className="btn-cta" onClick={handleBuild} disabled={generating}>
+          {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי'}
+        </button>
+      </div>
       <DateNav
         date={selectedDate}
         view="day"
@@ -81,6 +108,12 @@ export default function Tasks() {
         onViewChange={() => {}}
       />
       {error && <div className="error-banner">{error}</div>}
+      {buildMsg && <div className="info-banner">{buildMsg}</div>}
+      {unscheduled.length > 0 && (
+        <div className="warning-banner">
+          {unscheduled.length} משימות לא נכנסו ללוח הזמנים: {unscheduled.map(t => t.title).join(', ')}
+        </div>
+      )}
       <div className="tasks-layout">
         <div className="tasks-list-col">
           {loading ? (

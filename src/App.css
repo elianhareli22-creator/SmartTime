@@ -422,6 +422,17 @@ html, body, #root {
   font-size: 0.875rem;
 }
 
+.info-banner {
+  background: #eef6ff;
+  border: 1px solid #93c5fd;
+  color: #1e40af;
+  border-radius: var(--radius);
+  padding-block: 0.7rem;
+  padding-inline: 1rem;
+  margin-block-end: 1rem;
+  font-size: 0.875rem;
+}
+
 .empty-state { color: var(--muted); font-size: 0.9rem; }
 
 /* ── Profile ─────────────────────────────────────────── */
