@@ -45,12 +45,6 @@ export default function NavBar() {
         {profile?.display_name && (
           <span className="navbar-user">{timeGreeting()}, {profile.display_name}</span>
         )}
-      </div>
-      <div className="navbar-links">
-        <Link to="/dashboard">לוח זמנים</Link>
-        <Link to="/tasks">משימות</Link>
-        <Link to="/chat">צ'אט</Link>
-        <Link to="/profile">פרופיל</Link>
         <div className="navbar-bell" ref={bellRef}>
           <button className="navbar-bell-btn" onClick={handleBellClick} aria-label="התראות" aria-expanded={open}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -88,6 +82,12 @@ export default function NavBar() {
             </div>
           )}
         </div>
+      </div>
+      <div className="navbar-links">
+        <Link to="/dashboard">לוח זמנים</Link>
+        <Link to="/tasks">משימות</Link>
+        <Link to="/chat">צ'אט</Link>
+        <Link to="/profile">פרופיל</Link>
         <button onClick={handleSignOut} className="btn-link">יציאה</button>
       </div>
     </nav>
