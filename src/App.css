@@ -201,8 +201,8 @@ html, body, #root {
 }
 
 .btn-link:hover {
-  color: #ffffff;
-  background: rgba(255,255,255,0.08);
+  color: var(--accent);
+  background: none;
 }
 
 .btn-primary {
@@ -1402,4 +1402,73 @@ html, body, #root {
   display: flex;
   gap: 0.5rem;
   margin-block-start: 0.25rem;
+}
+
+/* ── Break blocks ─────────────────────────────────────── */
+
+.schedule-block--break {
+  position: absolute;
+  background: var(--border);
+  border-inline-start: 3px solid var(--muted);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  padding-inline-start: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.schedule-block--break:hover {
+  background: var(--border-strong);
+}
+
+.break-block-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Break popover ────────────────────────────────────── */
+
+.break-popover {
+  position: absolute;
+  inset-inline-start: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 200;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.break-popover-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.break-popover-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.break-popover-close {
+  position: absolute;
+  inset-block-start: 0.4rem;
+  inset-inline-start: 0.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
 }

@@ -1,17 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
-import UpcomingPanel from '../components/UpcomingPanel'
 import DateNav from '../components/DateNav'
 import PendingTasksPanel from '../components/PendingTasksPanel'
 import WeekView from '../components/WeekView'
 import MonthView from '../components/MonthView'
 import Spinner from '../components/Spinner'
-import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateScheduleBlock } from '../lib/queries/schedule'
+import BlockModal from '../components/BlockModal'
+import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateScheduleBlock, deleteScheduleBlock } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate, updateTaskFixedStart } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
-import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
+import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
@@ -27,6 +27,8 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [unscheduled, setUnscheduled] = useState<UnscheduledTask[]>([])
+  const [modalBlock, setModalBlock] = useState<ScheduleBlock | null>(null)
+  const [modalTask, setModalTask] = useState<Task | null>(null)
   const notifiedRef = useRef<Set<string>>(new Set())
   const loadIdRef = useRef(0)
 
@@ -172,6 +174,54 @@ export default function Dashboard() {
     }
   }
 
+  async function handleBlockClick(block: ScheduleBlock) {
+    setModalBlock(block)
+    setModalTask(null)
+    if (block.task_id) {
+      const found = pendingTasks.find(t => t.id === block.task_id)
+      if (found) {
+        setModalTask(found)
+      } else {
+        try {
+          const { fetchTaskById } = await import('../lib/queries/tasks')
+          setModalTask(await fetchTaskById(block.task_id))
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  async function handleModalDelete() {
+    if (!modalBlock) return
+    try {
+      const { deleteScheduleBlock } = await import('../lib/queries/schedule')
+      await deleteScheduleBlock(modalBlock.id)
+      setBlocks(prev => prev.filter(b => b.id !== modalBlock.id))
+    } catch {
+      setError('שגיאה במחיקת בלוק')
+    }
+    setModalBlock(null)
+    setModalTask(null)
+  }
+
+  async function handleBreakDelete(blockId: string) {
+    const prevBlocks = blocks
+    setBlocks(prev => prev.filter(b => b.id !== blockId))
+    try {
+      await deleteScheduleBlock(blockId)
+    } catch {
+      setBlocks(prevBlocks)
+      setError('שגיאה בהסרת ההפסקה')
+    }
+  }
+
+  function handleModalEdit() {
+    setModalBlock(null)
+    setModalTask(null)
+    if (modalTask) {
+      window.location.href = '/tasks'
+    }
+  }
+
   function handleSelectDate(date: string) {
     setSelectedDate(date)
     setView('day')
@@ -228,7 +278,7 @@ export default function Dashboard() {
         <div className="content-loader"><Spinner /></div>
       ) : view === 'day' ? (
         <>
-          <PendingTasksPanel tasks={pendingTasks} />
+          <PendingTasksPanel tasks={pendingTasks.filter(t => !builtTaskIds.has(t.id))} />
           <TimeGrid
             blocks={dayBlocks}
             dayStart={dayStart}
@@ -236,9 +286,17 @@ export default function Dashboard() {
             doneTaskIds={doneTaskIds}
             onMarkDone={handleToggleDone}
             onBlockMove={handleBlockMove}
+            onBreakDelete={handleBreakDelete}
+            onBlockClick={handleBlockClick}
           />
-          {isToday(selectedDate) && (
-            <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
+          {modalBlock && (
+            <BlockModal
+              block={modalBlock}
+              task={modalTask}
+              onClose={() => { setModalBlock(null); setModalTask(null) }}
+              onDelete={handleModalDelete}
+              onEdit={handleModalEdit}
+            />
           )}
         </>
       ) : view === 'week' ? (
