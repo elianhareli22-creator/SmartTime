@@ -78,7 +78,7 @@ erDiagram
 | Table | Purpose |
 |---|---|
 | `profiles` | User display name and day window (start / end time) |
-| `tasks` | Tasks with priority, estimated duration, optional deadline and fixed-start pin |
+| `tasks` | Tasks with priority, estimated duration, optional fixed-start pin, and scheduled date |
 | `schedule_blocks` | AI-generated or break time blocks, one row per block per date |
 | `break_templates` | Recurring or one-off break rules injected into every generated schedule |
 | `chat_sessions` | AI assistant conversation containers |
