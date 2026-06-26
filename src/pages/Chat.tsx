@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { sendChatMessage, type ChatMessage } from '../lib/queries/chat'
+import { sendChatMessage, type WireMessage } from '../lib/queries/chat'
 import { todayStr } from '../lib/dateUtils'
 
-const GREETING: ChatMessage = {
+const GREETING: WireMessage = {
   role: 'model',
   text: 'שלום! אני כאן לעזור לך לתכנן את היום שלך. אפשר לבקש ממני להוסיף משימות, לערוך אותן, להזיז בלוקים בלוח הזמנים או לבנות מחדש את היום. במה אוכל לעזור?',
 }
 
 export default function Chat() {
   const { userId } = useAuth()
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING])
+  const [messages, setMessages] = useState<WireMessage[]>([GREETING])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +26,7 @@ export default function Chat() {
 
     setError(null)
     setInput('')
-    const userMessage: ChatMessage = { role: 'user', text }
+    const userMessage: WireMessage = { role: 'user', text }
     // Prior turns only (exclude the greeting and the message we're about to
     // send) — the Edge Function appends `text` as the final user turn itself.
     const history = messages.filter((m) => m !== GREETING)
