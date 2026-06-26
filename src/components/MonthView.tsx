@@ -1,7 +1,7 @@
 import type { ScheduleBlock } from '../lib/types'
 import { getMonthCells, isToday } from '../lib/dateUtils'
 
-const WEEK_HEADERS = ['ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳', 'א׳'] // Mon–Sun
+const WEEK_HEADERS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'] // Sun–Sat
 
 type Props = {
   blocks: ScheduleBlock[]
