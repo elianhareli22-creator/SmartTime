@@ -30,7 +30,8 @@
   --pri-low-fg:   #166534;
 
   /* Block colors */
-  --block-task:   #1e3a5f;
+  --block-task:     #1e3a5f;
+  --block-forbidden: #c0392b;
 
   /* Geometry */
   --radius-sm:    4px;
@@ -567,6 +568,11 @@ html, body, #root {
 }
 
 .schedule-block--done .block-title { text-decoration: line-through; }
+
+.schedule-block--forbidden {
+  background: var(--block-forbidden, #c0392b) !important;
+  color: #fff;
+}
 
 .block-checkbox {
   margin-top: 2px;
