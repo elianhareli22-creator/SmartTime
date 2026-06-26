@@ -16,14 +16,12 @@ export default function ScheduleBlockView({ block, dayStartMin, onMarkDone, isDo
   const top = (startMin - dayStartMin) * PX_PER_MIN
   const height = Math.max((endMin - startMin) * PX_PER_MIN, 24)
 
-  const isBreak = block.block_type === 'break'
-
   return (
     <div
-      className={`schedule-block ${isBreak ? 'schedule-block--break' : 'schedule-block--task'}${isDone ? ' schedule-block--done' : ''}`}
+      className={`schedule-block${isDone ? ' schedule-block--done' : ''}`}
       style={{ top: `${top}px`, height: `${height}px` }}
     >
-      {!isBreak && block.task_id && (
+      {block.task_id && (
         <input
           type="checkbox"
           className="block-checkbox"

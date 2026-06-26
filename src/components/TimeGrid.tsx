@@ -51,7 +51,7 @@ export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMark
             <span className="now-label">עכשיו</span>
           </div>
         )}
-        {blocks.map(block => (
+        {blocks.filter(b => b.block_type !== 'break').map(block => (
           <ScheduleBlockView
             key={block.id}
             block={block}
