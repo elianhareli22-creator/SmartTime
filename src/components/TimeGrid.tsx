@@ -10,6 +10,8 @@ import {
 import type { ScheduleBlock } from '../lib/types'
 import { timeStrToMinutes, minutesToTimeStr, nowMinutes } from '../lib/timeUtils'
 import ScheduleBlockView from './ScheduleBlock'
+import BreakBlockView from './BreakBlockView'
+import BreakModal from './BreakModal'
 
 const PX_PER_MIN = 1.5
 
@@ -20,6 +22,11 @@ type DragState = {
   isCollision: boolean
 }
 
+type ActiveBreak = {
+  block: ScheduleBlock
+  top: number
+}
+
 type Props = {
   blocks: ScheduleBlock[]
   dayStart: string
@@ -27,15 +34,18 @@ type Props = {
   doneTaskIds: Set<string>
   onMarkDone: (taskId: string) => void
   onBlockMove: (blockId: string, newStart: string, newEnd: string) => Promise<void>
+  onBreakDelete: (blockId: string) => Promise<void>
+  onBlockClick?: (block: ScheduleBlock) => void
 }
 
-export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMarkDone, onBlockMove }: Props) {
+export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMarkDone, onBlockMove, onBreakDelete, onBlockClick }: Props) {
   const dayStartMin = timeStrToMinutes(dayStart)
   const dayEndMin = timeStrToMinutes(dayEnd)
   const totalHeight = (dayEndMin - dayStartMin) * PX_PER_MIN
 
   const [nowMin, setNowMin] = useState(nowMinutes())
   const [dragState, setDragState] = useState<DragState | null>(null)
+  const [activeBreak, setActiveBreak] = useState<ActiveBreak | null>(null)
 
   useEffect(() => {
     const id = setInterval(() => setNowMin(nowMinutes()), 60_000)
@@ -105,6 +115,7 @@ export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMark
   }
 
   const taskBlocks = blocks.filter(b => b.block_type !== 'break')
+  const breakBlocks = blocks.filter(b => b.block_type === 'break')
 
   return (
     <div className="day-grid">
@@ -120,12 +131,24 @@ export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMark
         ))}
       </div>
       <DndContext sensors={sensors} onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
-        <div className="blocks-col" style={{ height: `${totalHeight}px` }}>
+        <div
+          className="blocks-col"
+          style={{ height: `${totalHeight}px` }}
+          onClick={e => { if (activeBreak && e.target === e.currentTarget) setActiveBreak(null) }}
+        >
           {showNow && (
             <div className="now-line" style={{ top: `${nowTop}px` }}>
               <span className="now-label">עכשיו</span>
             </div>
           )}
+          {breakBlocks.map(block => (
+            <BreakBlockView
+              key={block.id}
+              block={block}
+              dayStartMin={dayStartMin}
+              onClick={(b, top) => setActiveBreak({ block: b, top })}
+            />
+          ))}
           {taskBlocks.map(block => (
             <ScheduleBlockView
               key={block.id}
@@ -135,10 +158,19 @@ export default function TimeGrid({ blocks, dayStart, dayEnd, doneTaskIds, onMark
               isDone={block.task_id ? doneTaskIds.has(block.task_id) : false}
               dragDeltaY={dragState?.id === block.id ? dragState.snappedDeltaY : undefined}
               isCollision={dragState?.id === block.id ? dragState.isCollision : undefined}
+              onBlockClick={onBlockClick}
             />
           ))}
-          {taskBlocks.length === 0 && (
+          {taskBlocks.length === 0 && breakBlocks.length === 0 && (
             <div className="grid-empty">לחץ על ״בנה את היום שלי״ כדי לקבל לוח זמנים</div>
+          )}
+          {activeBreak && (
+            <BreakModal
+              block={activeBreak.block}
+              top={activeBreak.top}
+              onDelete={onBreakDelete}
+              onClose={() => setActiveBreak(null)}
+            />
           )}
         </div>
       </DndContext>
