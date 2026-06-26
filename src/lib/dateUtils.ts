@@ -21,7 +21,7 @@ export function addDays(date: string, n: number): string {
 export function getWeekStart(date: string): string {
   const d = new Date(date + 'T00:00:00')
   const day = d.getDay() // 0 = Sun
-  const diff = day === 0 ? -6 : 1 - day // shift to Monday
+  const diff = -day // shift to Sunday
   d.setDate(d.getDate() + diff)
   return fmt(d)
 }
@@ -46,7 +46,7 @@ export function getMonthCells(date: string): (string | null)[] {
   const start = new Date(getMonthStart(date) + 'T00:00:00')
   const end = new Date(getMonthEnd(date) + 'T00:00:00')
   const startDay = start.getDay() // 0 = Sun
-  const padding = startDay === 0 ? 6 : startDay - 1 // Monday-based
+  const padding = startDay // Sunday-based
   const cells: (string | null)[] = Array(padding).fill(null)
   const cur = new Date(start)
   while (cur <= end) {
