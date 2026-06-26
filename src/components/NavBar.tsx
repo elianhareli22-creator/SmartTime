@@ -32,8 +32,10 @@ export default function NavBar() {
   }, [open])
 
   function handleBellClick() {
-    setOpen(prev => !prev)
-    markAllRead()
+    setOpen(prev => {
+      if (prev) markAllRead()   // closing → mark read
+      return !prev
+    })
   }
 
   return (
@@ -50,7 +52,7 @@ export default function NavBar() {
         <Link to="/chat">צ'אט</Link>
         <Link to="/profile">פרופיל</Link>
         <div className="navbar-bell" ref={bellRef}>
-          <button className="navbar-bell-btn" onClick={handleBellClick} aria-label="התראות">
+          <button className="navbar-bell-btn" onClick={handleBellClick} aria-label="התראות" aria-expanded={open}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
