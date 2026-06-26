@@ -279,12 +279,32 @@ html, body, #root {
 
 /* ── Loading ─────────────────────────────────────────── */
 
-.loading {
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.page-loader {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  color: var(--muted);
+  background: var(--paper);
+}
+
+.content-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
 }
 
 .loading-text {
