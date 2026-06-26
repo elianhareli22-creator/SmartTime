@@ -94,7 +94,7 @@ Rules:
               title: { type: 'string' },
               start_time: { type: 'string' },
               end_time: { type: 'string' },
-              block_type: { type: 'string', enum: ['task', 'break'] },
+              block_type: { type: 'string', enum: ['task'] },
             },
             required: ['task_id', 'title', 'start_time', 'end_time', 'block_type'],
           },

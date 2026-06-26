@@ -67,13 +67,11 @@ export default function WeekView({ blocks, selectedDate, dayStart, dayEnd, onSel
                 return (
                   <div
                     key={block.id}
-                    className={`week-block${block.block_type === 'break' ? ' week-block--break' : ' week-block--task'}`}
+                    className="week-block week-block--task"
                     style={{ top: `${top}px`, height: `${height}px` }}
                     title={block.title}
                   >
-                    {block.block_type !== 'break' && (
-                      <span className="week-block-title">{block.title}</span>
-                    )}
+                    <span className="week-block-title">{block.title}</span>
                   </div>
                 )
               })}

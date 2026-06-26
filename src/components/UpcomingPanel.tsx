@@ -28,7 +28,7 @@ export default function UpcomingPanel({ blocks, doneTaskIds }: Props) {
         {upcoming.map(block => (
           <div
             key={block.id}
-            className={`upcoming-item${block.block_type === 'break' ? ' upcoming-break' : ''}`}
+            className="upcoming-item"
           >
             <span className="upcoming-time">{formatTimeRange(block.start_time, block.end_time)}</span>
             <span className="upcoming-name">{block.title}</span>
