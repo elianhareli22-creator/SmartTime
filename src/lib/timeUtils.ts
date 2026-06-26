@@ -4,6 +4,12 @@ export function timeStrToMinutes(t: string): number {
   return parseInt(parts[0]) * 60 + parseInt(parts[1])
 }
 
+export function minutesToTimeStr(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
+}
+
 export function nowMinutes(): number {
   const d = new Date()
   return d.getHours() * 60 + d.getMinutes()
