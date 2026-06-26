@@ -131,6 +131,21 @@ export default function Dashboard() {
   }
 
   async function handleBlockMove(blockId: string, newStart: string, newEnd: string) {
+    if (blockId.startsWith('fixed-')) {
+      const taskId = blockId.slice('fixed-'.length)
+      const prevTasks = pendingTasks
+      setPendingTasks(prev =>
+        prev.map(t => t.id === taskId ? { ...t, fixed_start: newStart } : t)
+      )
+      try {
+        await updateTaskFixedStart(taskId, newStart)
+      } catch {
+        setPendingTasks(prevTasks)
+        setError('שגיאה בעדכון לוח הזמנים')
+      }
+      return
+    }
+
     const prevBlocks = blocks
     setBlocks(prev => prev.map(b => b.id === blockId
       ? { ...b, start_time: newStart, end_time: newEnd }
@@ -138,6 +153,12 @@ export default function Dashboard() {
     ))
     try {
       await updateScheduleBlock(blockId, newStart, newEnd)
+    } catch {
+      setBlocks(prevBlocks)
+      setError('שגיאה בעדכון לוח הזמנים')
+      return
+    }
+    try {
       const movedBlock = prevBlocks.find(b => b.id === blockId)
       if (movedBlock?.task_id) {
         const task = pendingTasks.find(t => t.id === movedBlock.task_id)
@@ -146,8 +167,7 @@ export default function Dashboard() {
         }
       }
     } catch {
-      setBlocks(prevBlocks)
-      setError('שגיאה בעדכון לוח הזמנים')
+      console.warn('Block moved but fixed_start update failed')
     }
   }
 
