@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Task } from '../lib/types'
+import { todayStr } from '../lib/dateUtils'
 
 type FormData = {
   title: string
@@ -7,16 +8,19 @@ type FormData = {
   priority: 'low' | 'medium' | 'high'
   deadline: string
   fixed_start: string
+  scheduled_date: string
 }
 
 type Props = {
   editTarget: Task | null
+  defaultDate?: string
   onSubmit: (data: {
     title: string
     estimated_minutes: number
     priority: 'low' | 'medium' | 'high'
     deadline: string | null
     fixed_start: string | null
+    scheduled_date: string
   }) => Promise<void>
   onCancel: () => void
   loading: boolean
@@ -28,9 +32,10 @@ const EMPTY: FormData = {
   priority: 'medium',
   deadline: '',
   fixed_start: '',
+  scheduled_date: '',
 }
 
-export default function TaskForm({ editTarget, onSubmit, onCancel, loading }: Props) {
+export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, loading }: Props) {
   const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
@@ -42,12 +47,13 @@ export default function TaskForm({ editTarget, onSubmit, onCancel, loading }: Pr
         priority: editTarget.priority as 'low' | 'medium' | 'high',
         deadline: editTarget.deadline ? editTarget.deadline.slice(0, 16) : '',
         fixed_start: editTarget.fixed_start ? editTarget.fixed_start.slice(0, 5) : '',
+        scheduled_date: editTarget.scheduled_date,
       })
     } else {
-      setForm(EMPTY)
+      setForm({ ...EMPTY, scheduled_date: defaultDate ?? todayStr() })
     }
     setErrors({})
-  }, [editTarget])
+  }, [editTarget, defaultDate])
 
   function validate(): boolean {
     const errs: Partial<Record<keyof FormData, string>> = {}
@@ -69,8 +75,9 @@ export default function TaskForm({ editTarget, onSubmit, onCancel, loading }: Pr
       priority: form.priority,
       deadline: form.deadline || null,
       fixed_start: form.fixed_start || null,
+      scheduled_date: form.scheduled_date,
     })
-    setForm(EMPTY)
+    setForm({ ...EMPTY, scheduled_date: defaultDate ?? todayStr() })
     setErrors({})
   }
 
@@ -117,6 +124,15 @@ export default function TaskForm({ editTarget, onSubmit, onCancel, loading }: Pr
           <option value="medium">בינונית</option>
           <option value="low">נמוכה</option>
         </select>
+      )}
+
+      {field('scheduled_date', 'תאריך *',
+        <input
+          className="form-input"
+          type="date"
+          value={form.scheduled_date}
+          onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
+        />
       )}
 
       {field('deadline', 'דדליין (אופציונלי)',
