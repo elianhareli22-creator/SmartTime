@@ -187,7 +187,7 @@ type AiBlock = {
   title: string
   start_time: string
   end_time: string
-  block_type: 'task' | 'break'
+  block_type: 'task'
 }
 
 function timeToMinutes(t: string): number {
