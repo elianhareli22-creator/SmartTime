@@ -16,7 +16,7 @@ const TOOL_DECLARATIONS = [
         estimated_minutes: { type: 'integer' },
         priority: { type: 'string', enum: ['low', 'medium', 'high'] },
         deadline: { type: 'string', nullable: true },
-        fixed_start: { type: 'string', nullable: true },
+        fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD; defaults to today' },
       },
       required: ['title', 'estimated_minutes', 'priority'],
@@ -33,7 +33,7 @@ const TOOL_DECLARATIONS = [
         estimated_minutes: { type: 'integer', nullable: true },
         priority: { type: 'string', enum: ['low', 'medium', 'high'], nullable: true },
         deadline: { type: 'string', nullable: true },
-        fixed_start: { type: 'string', nullable: true },
+        fixed_start: { type: 'string', nullable: true, description: 'שעת התחלה קבועה בפורמט HH:MM (למשל 12:30). מלא רק כשהמשתמש ציין שעה מפורשת.' },
         scheduled_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
       },
       required: ['task_id'],
@@ -267,7 +267,18 @@ ${blockLines}
 
 כשמשתמש מבקש לבצע פעולה — השתמש בכלים המתאימים. לאחר ביצוע, ענה בעברית בצורה ידידותית וקצרה.
 
-**תאריכים:** "היום" הוא ${context.today}. פענח ביטויים יחסיים ("מחר", "מחרתיים", "יום חמישי") ביחס אליו והעבר אותם לכלים בפורמט YYYY-MM-DD. הבלוקים המוצגים למעלה הם של היום בלבד — לכל תאריך אחר קרא תחילה ל-get_schedule כדי לקבל את הבלוקים וה-IDs שלהם לפני עריכה.`
+**תאריכים:** "היום" הוא ${context.today}. פענח ביטויים יחסיים ("מחר", "מחרתיים", "יום חמישי") ביחס אליו והעבר אותם לכלים בפורמט YYYY-MM-DD. הבלוקים המוצגים למעלה הם של היום בלבד — לכל תאריך אחר קרא תחילה ל-get_schedule כדי לקבל את הבלוקים וה-IDs שלהם לפני עריכה.
+
+**שעות:** ביטוי של שעה ("ב-12:30", "בשעה 9", "ב-14:00") ממופה ל-\`fixed_start\` בפורמט HH:MM. **אל תשמיט שעה שהמשתמש ציין** — אם ציין שעה, חובה למלא \`fixed_start\`.
+
+**משך חובה (estimated_minutes):** אם המשתמש לא ציין משך — **שאל אותו לפני קריאה ל-\`create_task\`**. אל תמציא משך ואל תשתמש בערך ברירת מחדל.
+
+**יצירת משימה ללא שעה:** כאשר המשתמש מבקש ליצור משימה ולא ציין שעה — **שאל כיצד להמשיך**, עם שלוש אפשרויות:
+1. המשתמש בוחר שעה → הגדר \`fixed_start\` לשעה שנבחרה → המשימה תופיע אוטומטית בלוח.
+2. המשתמש רוצה שה-AI יקבע — צור את המשימה עם \`fixed_start\` = ${context.nowTime} (השעה הנוכחית), ולאחר מכן **שאל אם השעה מתאימה** או שהמשתמש מעדיף שעה אחרת; אם כן — עדכן את \`fixed_start\` בהתאם.
+3. המשתמש רוצה שהמשימה תחכה לתכנון — צור ללא \`fixed_start\` (המשימה תקובע כשהמשתמש יפעיל "בנה את היום").
+
+**הצגה בלוח הזמנים:** משימה עם \`fixed_start\` מופיעה אוטומטית בלוח ביום שלה — **אין צורך ב-"בנה את היום"**. משימה **ללא** \`fixed_start\` מוצגת רק לאחר הפעלת "בנה את היום". ציין זאת בתשובה למשתמש.`
 }
 
 async function executeTool(
