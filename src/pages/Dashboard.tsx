@@ -1,16 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import TimeGrid from '../components/TimeGrid'
-import UpcomingPanel from '../components/UpcomingPanel'
 import DateNav from '../components/DateNav'
-import PendingTasksPanel from '../components/PendingTasksPanel'
 import WeekView from '../components/WeekView'
 import MonthView from '../components/MonthView'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate } from '../lib/queries/tasks'
 import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
-import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
+import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
@@ -80,7 +78,6 @@ export default function Dashboard() {
     const today = todayStr()
     blocks.forEach(block => {
       if (block.date !== today) return // blocks may span a week/month range
-      if (block.block_type === 'break') return
       if (notifiedRef.current.has(block.id)) return
       if (block.task_id && doneTaskIds.has(block.task_id)) return
       const startMin = timeStrToMinutes(block.start_time)
@@ -187,7 +184,6 @@ export default function Dashboard() {
         <div className="loading-text">טוען...</div>
       ) : view === 'day' ? (
         <>
-          <PendingTasksPanel tasks={pendingTasks} />
           <TimeGrid
             blocks={dayBlocks}
             dayStart={dayStart}
@@ -195,9 +191,6 @@ export default function Dashboard() {
             doneTaskIds={doneTaskIds}
             onMarkDone={handleToggleDone}
           />
-          {isToday(selectedDate) && (
-            <UpcomingPanel blocks={dayBlocks} doneTaskIds={doneTaskIds} />
-          )}
         </>
       ) : view === 'week' ? (
         <WeekView
