@@ -9,7 +9,7 @@ import MonthView from '../components/MonthView'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate } from '../lib/queries/tasks'
-import { nowMinutes, timeStrToMinutes } from '../lib/timeUtils'
+import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
 import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd, isToday } from '../lib/dateUtils'
 import type { ScheduleBlock, Task, View } from '../lib/types'
 
@@ -136,7 +136,23 @@ export default function Dashboard() {
     setView('day')
   }
 
-  const dayBlocks = view === 'day' ? blocks : []
+  const builtTaskIds = new Set(blocks.map(b => b.task_id).filter(Boolean))
+  const synthesizedFixedBlocks: ScheduleBlock[] = view === 'day'
+    ? pendingTasks
+        .filter(task => task.fixed_start != null && !builtTaskIds.has(task.id))
+        .map(task => ({
+          id: `fixed-${task.id}`,
+          user_id: task.user_id,
+          task_id: task.id,
+          date: selectedDate,
+          start_time: task.fixed_start!,
+          end_time: minutesToTimeStr(timeStrToMinutes(task.fixed_start!) + task.estimated_minutes),
+          block_type: 'task' as const,
+          title: task.title,
+        }))
+    : []
+
+  const dayBlocks = view === 'day' ? [...blocks, ...synthesizedFixedBlocks] : []
 
   return (
     <div className="page dashboard-page">
