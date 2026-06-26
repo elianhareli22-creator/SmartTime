@@ -274,6 +274,16 @@ html, body, #root {
   font-size: 0.9rem;
 }
 
+.warning-banner {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
 .empty-state { color: var(--text-muted); font-size: 0.95rem; }
 .loading-text { color: var(--text-muted); }
 
