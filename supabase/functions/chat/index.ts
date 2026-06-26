@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
       const functionResponseParts: GeminiPart[] = []
       for (const part of functionCallParts) {
         const { name, args } = part.functionCall!
-        const toolResult = await executeTool(name, args, userId, supabase, authHeader, supabaseUrl)
+        const toolResult = await executeTool(name, args, userId, supabase, authHeader, supabaseUrl, today)
         actionsPerformed.push(toolResult)
         functionResponseParts.push({
           functionResponse: {
@@ -277,6 +277,7 @@ async function executeTool(
   supabase: ReturnType<typeof createClient>,
   authHeader: string,
   supabaseUrl: string,
+  today: string,
 ): Promise<ToolCallResult> {
   try {
     if (name === 'create_task') {
@@ -342,7 +343,7 @@ async function executeTool(
       const res = await fetch(`${supabaseUrl}/functions/v1/generate-schedule`, {
         method: 'POST',
         headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-        body: JSON.stringify(args.date ? { date: args.date } : {}),
+        body: JSON.stringify({ date: args.date ?? today }),
       })
       if (!res.ok) throw new Error('generate-schedule failed')
       return { tool: name, args, result: 'ok' }
