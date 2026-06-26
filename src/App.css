@@ -1711,7 +1711,7 @@ html, body, #root {
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
 .bell-item-dismiss:hover {
-  color: var(--success);
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  color: var(--danger);
+  background: #fef2f2;
+  border-color: #fecaca;
 }

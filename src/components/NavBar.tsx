@@ -80,9 +80,9 @@ export default function NavBar() {
                       <button
                         className="bell-item-dismiss"
                         onClick={() => dismissNotification(n.id)}
-                        aria-label="סמן כנקרא והסר"
+                        aria-label="הסר התראה"
                       >
-                        ✓
+                        ✕
                       </button>
                     </li>
                   ))}
