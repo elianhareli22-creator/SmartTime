@@ -1319,101 +1319,26 @@ html, body, #root {
   justify-content: flex-end;
 }
 
-/* ── Mobile hamburger menu ───────────────────────────── */
-
-.navbar-hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.3rem;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  transition: background 0.12s;
-}
-
-.navbar-hamburger:hover { background: rgba(255,255,255,0.08); }
-
-.navbar-hamburger span {
-  display: block;
-  width: 18px;
-  height: 2px;
-  background: var(--muted-light);
-  border-radius: 1px;
-  transition: transform 0.2s, opacity 0.2s;
-  transform-origin: center;
-}
-
-.navbar-hamburger--open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
-.navbar-hamburger--open span:nth-child(2) { opacity: 0; }
-.navbar-hamburger--open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
-
-.navbar-mobile-menu {
-  display: none;
-  position: absolute;
-  inset-block-start: 100%;
-  inset-inline-start: 0;
-  inset-inline-end: 0;
-  background: var(--ink);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  z-index: 99;
-  padding: 0.4rem 0;
-  flex-direction: column;
-}
-
-.navbar-mobile-menu a {
-  display: block;
-  color: var(--muted-light);
-  text-decoration: none;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  transition: background 0.1s;
-}
-
-.navbar-mobile-menu a:hover { background: rgba(255,255,255,0.06); color: #fff; }
-
-.navbar-mobile-signout {
-  display: block;
-  width: 100%;
-  background: none;
-  border: none;
-  color: var(--muted-light);
-  text-align: start;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.1s;
-}
-
-.navbar-mobile-signout:hover { background: rgba(255,255,255,0.06); color: #fff; }
-
 /* ── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 600px) {
   .main-content { padding: 1.25rem 0.875rem; }
   .navbar { padding: 0 1rem; }
-  .navbar-user { display: none; }
-  .navbar-links { display: none; }
-  .navbar-hamburger { display: flex; }
-  .navbar-mobile-menu { display: flex; flex-direction: column; }
+  .navbar-links { gap: 0; }
 
   /* ── Chat mobile layout ── */
   .chat-page {
+    /* Fixed positioning escapes the parent's padding (from .main-content mobile
+       override) and anchors the chat page directly to the viewport below the
+       navbar. This prevents body scroll on both axes — only .chat-messages
+       scrolls internally. */
+    position: fixed;
+    inset-block-start: 52px; /* flush with bottom of navbar */
+    inset-inline: 0;
+    inset-block-end: 0;
+    height: auto;
     flex-direction: column;
-    /* dvh tracks the actual visible height as browser chrome collapses;
-       100vh fallback for older engines */
-    height: calc(100vh - 52px);
-    height: calc(100dvh - 52px);
-    overflow: hidden; /* clip both axes — scroll lives only in .chat-messages */
+    overflow: hidden;
   }
 
   /* Sidebar stacks above the chat area, capped to viewport width */
