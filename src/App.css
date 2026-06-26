@@ -352,7 +352,7 @@ html, body, #root {
 }
 
 .tasks-toolbar .date-nav {
-  margin-bottom: 0;
+  margin-block-end: 0;
 }
 
 .tasks-page .tasks-layout {
@@ -666,6 +666,11 @@ html, body, #root {
   gap: 0.65rem;
 }
 
+/* push messages to the bottom when there are few of them */
+.chat-messages::before {
+  content: '';
+  flex: 1;
+}
 
 .chat-bubble {
   max-width: 68%;
