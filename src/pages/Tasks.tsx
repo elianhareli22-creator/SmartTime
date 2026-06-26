@@ -7,8 +7,9 @@ import Spinner from '../components/Spinner'
 import { fetchTasksForDate, createTask, updateTask, deleteTask, moveTaskToDate } from '../lib/queries/tasks'
 import { generateSchedule } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
+import { getBreakTemplates } from '../lib/queries/breaks'
 import { todayStr } from '../lib/dateUtils'
-import type { Task } from '../lib/types'
+import type { Task, BreakTemplate } from '../lib/types'
 
 export default function Tasks() {
   const { userId } = useAuth()
@@ -21,6 +22,7 @@ export default function Tasks() {
   const [generating, setGenerating] = useState(false)
   const [unscheduled, setUnscheduled] = useState<UnscheduledTask[]>([])
   const [buildMsg, setBuildMsg] = useState<string | null>(null)
+  const [breakTemplates, setBreakTemplates] = useState<BreakTemplate[]>([])
 
   async function loadTasks() {
     if (!userId) return
@@ -35,6 +37,11 @@ export default function Tasks() {
   }
 
   useEffect(() => { loadTasks() }, [userId, selectedDate])
+
+  useEffect(() => {
+    if (!userId) return
+    getBreakTemplates(userId).then(setBreakTemplates).catch(() => {})
+  }, [userId])
 
   async function handleSubmit(data: Parameters<typeof createTask>[1]) {
     if (!userId) return
@@ -105,6 +112,7 @@ export default function Tasks() {
           view="day"
           onDateChange={setSelectedDate}
           onViewChange={() => {}}
+          showViewToggle={false}
         />
         <button className="btn-cta" onClick={handleBuild} disabled={generating}>
           {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי'}
@@ -134,6 +142,7 @@ export default function Tasks() {
           <TaskForm
             editTarget={editTarget}
             defaultDate={selectedDate}
+            breakTemplates={breakTemplates}
             onSubmit={handleSubmit}
             onCancel={() => setEditTarget(null)}
             loading={saving}

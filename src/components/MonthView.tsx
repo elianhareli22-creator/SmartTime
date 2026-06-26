@@ -31,8 +31,10 @@ export default function MonthView({ blocks, selectedDate, onSelectDate }: Props)
           if (!date) return <div key={`pad-${i}`} className="month-cell month-cell--empty" />
           const dayBlocks = byDate.get(date) ?? []
           const taskBlocks = dayBlocks.filter(b => b.block_type === 'task')
-          const visible = taskBlocks.slice(0, 3)
-          const overflow = taskBlocks.length - visible.length
+          const breakBlocks = dayBlocks.filter(b => b.block_type === 'break')
+          const allVisible = [...breakBlocks, ...taskBlocks].slice(0, 3)
+          const visible = allVisible
+          const overflow = (breakBlocks.length + taskBlocks.length) - visible.length
           const dayNum = parseInt(date.split('-')[2])
           return (
             <div
@@ -45,7 +47,11 @@ export default function MonthView({ blocks, selectedDate, onSelectDate }: Props)
               </span>
               <div className="month-blocks">
                 {visible.map(b => (
-                  <div key={b.id} className="month-block" title={b.title}>{b.title}</div>
+                  <div
+                    key={b.id}
+                    className={b.block_type === 'break' ? 'month-block--break' : 'month-block'}
+                    title={b.title}
+                  >{b.title}</div>
                 ))}
                 {overflow > 0 && <div className="month-overflow">+{overflow}</div>}
               </div>

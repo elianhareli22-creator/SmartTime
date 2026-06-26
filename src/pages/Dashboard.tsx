@@ -10,9 +10,10 @@ import BlockModal from '../components/BlockModal'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateScheduleBlock, deleteScheduleBlock } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate, updateTaskFixedStart } from '../lib/queries/tasks'
+import { getBreakTemplates } from '../lib/queries/breaks'
 import { nowMinutes, timeStrToMinutes, minutesToTimeStr } from '../lib/timeUtils'
 import { todayStr, getWeekStart, addDays, getMonthStart, getMonthEnd } from '../lib/dateUtils'
-import type { ScheduleBlock, Task, View } from '../lib/types'
+import type { ScheduleBlock, Task, View, BreakTemplate } from '../lib/types'
 
 const NOTIFY_WINDOW_MIN = 5
 
@@ -23,6 +24,8 @@ export default function Dashboard() {
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([])
   const [pendingTasks, setPendingTasks] = useState<Task[]>([])
   const [doneTaskIds, setDoneTaskIds] = useState<Set<string>>(new Set())
+  const [breakTemplates, setBreakTemplates] = useState<BreakTemplate[]>([])
+  const [suppressedBreakKeys, setSuppressedBreakKeys] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,6 +73,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (userId) loadData(userId, selectedDate, view)
   }, [userId, selectedDate, view])
+
+  useEffect(() => {
+    if (userId) getBreakTemplates(userId).then(setBreakTemplates).catch(() => {})
+  }, [userId])
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -204,12 +211,27 @@ export default function Dashboard() {
   }
 
   async function handleBreakDelete(blockId: string) {
+    if (blockId.startsWith('break-template-')) {
+      // Synthesized break — suppress it for this date without touching the DB
+      const [templatePart, dateStr] = blockId.split('|')
+      const templateId = templatePart.replace('break-template-', '')
+      const template = breakTemplates.find(t => t.id === templateId)
+      if (template && dateStr) {
+        setSuppressedBreakKeys(prev => new Set([...prev, `${dateStr}|${template.start_time.slice(0, 5)}`]))
+      }
+      return
+    }
+    const block = blocks.find(b => b.id === blockId)
+    if (block) {
+      setSuppressedBreakKeys(prev => new Set([...prev, `${block.date}|${block.start_time.slice(0, 5)}`]))
+    }
     const prevBlocks = blocks
     setBlocks(prev => prev.filter(b => b.id !== blockId))
     try {
       await deleteScheduleBlock(blockId)
     } catch {
       setBlocks(prevBlocks)
+      if (block) setSuppressedBreakKeys(prev => { const n = new Set(prev); n.delete(`${block.date}|${block.start_time.slice(0, 5)}`); return n })
       setError('שגיאה בהסרת ההפסקה')
     }
   }
@@ -225,6 +247,21 @@ export default function Dashboard() {
   function handleSelectDate(date: string) {
     setSelectedDate(date)
     setView('day')
+  }
+
+  function applicableBreaksForDate(templates: BreakTemplate[], date: string): BreakTemplate[] {
+    const d = new Date(date + 'T12:00:00Z')
+    const dow = d.getUTCDay()
+    return templates.filter(t => {
+      switch (t.recurrence_type) {
+        case 'daily': return true
+        case 'weekly': return t.recurrence_day_of_week === dow
+        case 'date': return t.recurrence_date === date
+        case 'date_range': return !!t.recurrence_date_start && !!t.recurrence_date_end &&
+          t.recurrence_date_start <= date && date <= t.recurrence_date_end
+        default: return false
+      }
+    })
   }
 
   const builtTaskIds = new Set(blocks.map(b => b.task_id).filter(Boolean))
@@ -243,7 +280,41 @@ export default function Dashboard() {
         }))
     : []
 
-  const dayBlocks = view === 'day' ? [...blocks, ...synthesizedFixedBlocks] : []
+  function synthesizedBreaksForRange(startDate: string, endDate: string): ScheduleBlock[] {
+    const existingKeys = new Set(
+      blocks.filter(b => b.block_type === 'break').map(b => `${b.date}|${b.start_time.slice(0, 5)}`)
+    )
+    const result: ScheduleBlock[] = []
+    let cur = startDate
+    while (cur <= endDate) {
+      applicableBreaksForDate(breakTemplates, cur).forEach(t => {
+        const key = `${cur}|${t.start_time.slice(0, 5)}`
+        if (!existingKeys.has(key) && !suppressedBreakKeys.has(key)) {
+          result.push({
+            id: `break-template-${t.id}|${cur}`,
+            user_id: userId ?? '',
+            task_id: null,
+            date: cur,
+            start_time: t.start_time,
+            end_time: t.end_time,
+            block_type: 'break' as const,
+            title: t.title,
+          })
+        }
+      })
+      cur = addDays(cur, 1)
+    }
+    return result
+  }
+
+  const weekStart = getWeekStart(selectedDate)
+  const weekEnd = addDays(weekStart, 6)
+
+  const dayBlocks = view === 'day'
+    ? [...blocks, ...synthesizedFixedBlocks, ...synthesizedBreaksForRange(selectedDate, selectedDate)]
+    : []
+  const weekBlocks = view === 'week' ? [...blocks, ...synthesizedBreaksForRange(weekStart, weekEnd)] : []
+  const monthBlocks = view === 'month' ? [...blocks, ...synthesizedBreaksForRange(getMonthStart(selectedDate), getMonthEnd(selectedDate))] : []
 
   return (
     <div className="page dashboard-page">
@@ -301,7 +372,7 @@ export default function Dashboard() {
         </>
       ) : view === 'week' ? (
         <WeekView
-          blocks={blocks}
+          blocks={weekBlocks}
           selectedDate={selectedDate}
           dayStart={dayStart}
           dayEnd={dayEnd}
@@ -309,7 +380,7 @@ export default function Dashboard() {
         />
       ) : (
         <MonthView
-          blocks={blocks}
+          blocks={monthBlocks}
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
         />

@@ -30,15 +30,14 @@ export default function TaskList({ tasks, onEdit, onDelete, onMoveToToday }: Pro
     <ul className="task-list">
       {tasks.map(task => (
         <li key={task.id} className={`task-item${task.status === 'done' ? ' task-done' : ''}`}>
-          <div className="task-item-main">
+          <div
+            className="task-item-main"
+            onClick={() => confirmId !== task.id && onEdit(task)}
+            style={{ cursor: 'pointer' }}
+          >
             <span className={`priority-dot ${PRIORITY_CLASS[task.priority]}`} title={PRIORITY_LABEL[task.priority]} />
             <span className="task-title">{task.title}</span>
             <span className="task-meta">{task.estimated_minutes} דק׳</span>
-            {task.deadline && (
-              <span className="task-meta">
-                עד {new Date(task.deadline).toLocaleDateString('he-IL')}
-              </span>
-            )}
             {task.fixed_start && (
               <span className="task-meta">מתחיל: {task.fixed_start.slice(0, 5)}</span>
             )}
@@ -58,7 +57,6 @@ export default function TaskList({ tasks, onEdit, onDelete, onMoveToToday }: Pro
               </>
             ) : (
               <>
-                <button className="btn-link" onClick={() => onEdit(task)}>עריכה</button>
                 <button className="btn-link" onClick={() => setConfirmId(task.id)}>מחק</button>
                 {onMoveToToday && task.status === 'pending' && (
                   <button className="btn-link" onClick={() => onMoveToToday(task.id)}>העבר להיום</button>
