@@ -57,3 +57,8 @@ export async function updateScheduleBlock(
     .eq('id', id)
   if (error) throw error
 }
+
+export async function deleteScheduleBlock(id: string): Promise<void> {
+  const { error } = await supabase.from('schedule_blocks').delete().eq('id', id)
+  if (error) throw error
+}
