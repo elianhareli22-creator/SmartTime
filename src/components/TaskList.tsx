@@ -8,9 +8,10 @@ type Props = {
   tasks: Task[]
   onEdit: (task: Task) => void
   onDelete: (id: string) => Promise<void>
+  onMoveToToday?: (id: string) => Promise<void>
 }
 
-export default function TaskList({ tasks, onEdit, onDelete }: Props) {
+export default function TaskList({ tasks, onEdit, onDelete, onMoveToToday }: Props) {
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -59,6 +60,9 @@ export default function TaskList({ tasks, onEdit, onDelete }: Props) {
               <>
                 <button className="btn-link" onClick={() => onEdit(task)}>עריכה</button>
                 <button className="btn-link" onClick={() => setConfirmId(task.id)}>מחק</button>
+                {onMoveToToday && task.status === 'pending' && (
+                  <button className="btn-link" onClick={() => onMoveToToday(task.id)}>העבר להיום</button>
+                )}
               </>
             )}
           </div>
