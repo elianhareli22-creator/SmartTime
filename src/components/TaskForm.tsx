@@ -47,7 +47,7 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
         priority: editTarget.priority as 'low' | 'medium' | 'high',
         deadline: editTarget.deadline ? editTarget.deadline.slice(0, 16) : '',
         fixed_start: editTarget.fixed_start ? editTarget.fixed_start.slice(0, 5) : '',
-        scheduled_date: editTarget.scheduled_date,
+        scheduled_date: editTarget.scheduled_date ?? todayStr(),
       })
     } else {
       setForm({ ...EMPTY, scheduled_date: defaultDate ?? todayStr() })
@@ -62,6 +62,7 @@ export default function TaskForm({ editTarget, defaultDate, onSubmit, onCancel, 
     if (!form.estimated_minutes || isNaN(mins) || mins <= 0) {
       errs.estimated_minutes = 'נדרשת משך זמן חיובי'
     }
+    if (!form.scheduled_date) errs.scheduled_date = 'נדרש תאריך'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
