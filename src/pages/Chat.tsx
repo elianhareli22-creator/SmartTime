@@ -200,7 +200,7 @@ export default function Chat() {
 
       <div className="chat-main">
         {loadingInitial ? (
-          <div className="content-loader"><Spinner /></div>
+          <div className="content-loader" style={{ flex: 1 }}><Spinner /></div>
         ) : (
           <>
             <div className="chat-messages">
