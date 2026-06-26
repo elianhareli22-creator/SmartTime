@@ -144,17 +144,23 @@ Two-column layout:
 **On mount:**
 1. Read `localStorage` for a session id.
 2. If found → `fetchMessages(id)` → hydrate message list, set `currentSessionId`.
-3. If not found → `createSession(userId)` → set `currentSessionId`, store in `localStorage`, show greeting.
+3. If not found → show greeting with `currentSessionId = null` (no DB row yet).
 
-**On send:**
-1. `appendMessage(sessionId, 'user', text)` immediately (before the edge-function call).
-2. Call edge function with history (all prior DB messages, excluding the one just sent — edge function appends it itself).
+**On first message send (when `currentSessionId === null`):**
+1. `createSession(userId)` → set `currentSessionId`, store in `localStorage`.
+2. `appendMessage(sessionId, 'user', text)` immediately.
+3. Call edge function with empty history (first turn).
+4. `appendMessage(sessionId, 'model', response.reply)` on success.
+
+**On subsequent sends:**
+1. `appendMessage(sessionId, 'user', text)` immediately.
+2. Call edge function with all prior DB messages (excluding current user turn — edge function appends it itself).
 3. `appendMessage(sessionId, 'model', response.reply)` on success.
 
 **"New chat" button:**
-1. If `currentSessionId` and messages.length > 0: call `title-chat-session` with sessionId. Sidebar updates with returned title.
-2. `createSession(userId)` → new id → store in `localStorage` → reset messages to greeting.
-3. If messages.length === 0: skip title call, reuse or discard the empty session (just reset state; don't create another empty one).
+1. If `currentSessionId` is set (session has at least one message): call `title-chat-session` → sidebar updates with returned title. Clear `localStorage`.
+2. Reset `currentSessionId = null`, reset messages to greeting.
+3. If `currentSessionId === null` (no messages sent yet): no-op beyond visual reset — nothing to title or delete.
 
 ### Sidebar
 
