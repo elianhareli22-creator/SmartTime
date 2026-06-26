@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 
 function timeGreeting(): string {
   const h = new Date().getHours()
@@ -12,7 +14,27 @@ function timeGreeting(): string {
 
 export default function NavBar() {
   const { profile } = useAuth()
+  const { notifications, unreadCount, markAllRead } = useNotifications()
+  const [open, setOpen] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
+
   const handleSignOut = () => supabase.auth.signOut()
+
+  useEffect(() => {
+    if (!open) return
+    function handleOutsideClick(e: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [open])
+
+  function handleBellClick() {
+    setOpen(prev => !prev)
+    markAllRead()
+  }
 
   return (
     <nav className="navbar">
@@ -27,6 +49,41 @@ export default function NavBar() {
         <Link to="/tasks">משימות</Link>
         <Link to="/chat">צ'אט</Link>
         <Link to="/profile">פרופיל</Link>
+        <div className="navbar-bell" ref={bellRef}>
+          <button className="navbar-bell-btn" onClick={handleBellClick} aria-label="התראות">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
+          </button>
+          {open && (
+            <div className="bell-dropdown">
+              <div className="bell-dropdown-header">
+                <span className="bell-dropdown-title">התראות</span>
+                {notifications.some(n => !n.read) && (
+                  <button className="bell-mark-read" onClick={markAllRead}>סמן הכל כנקרא</button>
+                )}
+              </div>
+              {notifications.length === 0 ? (
+                <p className="bell-empty">אין התראות</p>
+              ) : (
+                <ul className="bell-list">
+                  {notifications.map(n => (
+                    <li key={n.id} className={`bell-item${n.read ? '' : ' bell-item--unread'}`}>
+                      <span className="bell-item-title">{n.title}</span>
+                      <span className="bell-item-meta">
+                        {n.threshold === '10' ? '10 דקות לפני' : 'דקה אחת לפני'}
+                        {' · '}
+                        {n.firedAt.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
         <button onClick={handleSignOut} className="btn-link">יציאה</button>
       </div>
     </nav>

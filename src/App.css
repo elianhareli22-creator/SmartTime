@@ -1493,3 +1493,130 @@ html, body, #root {
   color: var(--cta);
   margin-block-start: 0.25rem;
 }
+
+/* ── Notification bell ──────────────────────────────── */
+
+.navbar-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-bell-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-light);
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: color 0.12s, background 0.12s;
+}
+.navbar-bell-btn:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.08);
+}
+
+.bell-badge {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 2px;
+  background: var(--cta);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  line-height: 1;
+}
+
+.bell-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  min-width: 280px;
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 150;
+}
+
+.bell-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem 0.5rem;
+  border-block-end: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+
+.bell-dropdown-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bell-mark-read {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-family: inherit;
+  padding: 0;
+}
+.bell-mark-read:hover { text-decoration: underline; }
+
+.bell-empty {
+  padding: 1.25rem 1rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.bell-list {
+  list-style: none;
+}
+
+.bell-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 1rem;
+  border-block-end: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.bell-item:last-child { border-block-end: none; }
+.bell-item:hover { background: var(--paper); }
+
+.bell-item--unread {
+  border-inline-start: 3px solid var(--accent);
+  padding-inline-start: calc(1rem - 3px);
+  background: rgba(30, 58, 95, 0.04);
+}
+
+.bell-item-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.bell-item-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
