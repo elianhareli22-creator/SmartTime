@@ -45,3 +45,15 @@ export async function generateSchedule(
   const res = data as { blocks: ScheduleBlock[] | null; unscheduled: UnscheduledTask[] | null }
   return { blocks: res.blocks ?? [], unscheduled: res.unscheduled ?? [] }
 }
+
+export async function updateScheduleBlock(
+  id: string,
+  start_time: string,
+  end_time: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('schedule_blocks')
+    .update({ start_time, end_time })
+    .eq('id', id)
+  if (error) throw error
+}
