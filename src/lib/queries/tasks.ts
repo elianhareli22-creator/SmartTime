@@ -1,16 +1,6 @@
 import { supabase } from '../supabase'
 import type { Task } from '../types'
 
-export async function fetchTasks(userId: string): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data as Task[]
-}
-
 export async function createTask(
   userId: string,
   input: {
@@ -71,17 +61,6 @@ export async function markTaskPending(id: string): Promise<void> {
     .update({ status: 'pending' })
     .eq('id', id)
   if (error) throw error
-}
-
-export async function fetchPendingTasks(userId: string): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data as Task[]
 }
 
 export async function fetchPendingTasksForDate(userId: string, date: string): Promise<Task[]> {
