@@ -270,7 +270,7 @@ ${blockLines}
 
 **תאריכים:** "היום" הוא ${context.today}. פענח ביטויים יחסיים ("מחר", "מחרתיים", "יום חמישי") ביחס אליו והעבר אותם לכלים בפורמט YYYY-MM-DD. הבלוקים המוצגים למעלה הם של היום בלבד — לכל תאריך אחר קרא תחילה ל-get_schedule כדי לקבל את הבלוקים וה-IDs שלהם לפני עריכה. **כשאתה מציג תאריך למשתמש בתשובה — השתמש בפורמט dd/mm/yy (למשל 27/06/26), לעולם לא בפורמט ISO (YYYY-MM-DD). פורמט ISO משמש רק בקריאות לכלים.**
 
-**שעות:** ביטוי של שעה ("ב-12:30", "בשעה 9", "ב-14:00") ממופה ל-\`fixed_start\` בפורמט HH:MM. **אל תשמיט שעה שהמשתמש ציין** — אם ציין שעה, חובה למלא \`fixed_start\`.
+**שעות:** כל ציון שעה ממופה ל-\`fixed_start\` בפורמט HH:MM — כולל שעה עגולה ("בשעה 14" → 14:00, "ב-9" → 09:00) וגם טווח ("14 עד 15", "מ-9 ל-10" → \`fixed_start\` = תחילת הטווח). **טווח שעות נותן גם את המשך:** אם המשתמש נתן טווח, חשב \`estimated_minutes\` = הפרש הדקות בין סוף הטווח לתחילתו, וקבע \`user_gave_duration=true\`. דוגמה: "מסעדה ב-14 עד 15" → \`fixed_start\`=14:00, \`estimated_minutes\`=60, \`user_gave_duration\`=true. **אם המשתמש נקב בשעה כלשהי — חובה למלא \`fixed_start\` ואסור לומר שלא ציין שעה.**
 
 **משך חובה (estimated_minutes):** משך הוא שדה חובה שחייב להגיע מהמשתמש. בקריאה ל-\`create_task\` עליך להעביר \`user_gave_duration\`: שים \`true\` רק אם המשתמש נקב במפורש במשך (למשל "שעה", "45 דקות"); אחרת \`false\`. **שעת התחלה (כמו "ב-19", "ב-12:30") היא לא משך.** אם המשתמש לא נקב במשך — **שאל "כמה זמן זה ייקח?" ואל תיצור את המשימה עד שיענה.** לעולם אל תנחש משך ואל תעתיק אותו ממשימות קיימות ברשימה. דוגמה: "מחר יש לי מסעדה ב-19 עם עידן" → יש שעה (19:00) אבל אין משך → \`user_gave_duration=false\`, שאל על המשך.
 
@@ -279,7 +279,9 @@ ${blockLines}
 2. המשתמש רוצה שה-AI יקבע — צור את המשימה עם \`fixed_start\` = ${context.nowTime} (השעה הנוכחית), ולאחר מכן **שאל אם השעה מתאימה** או שהמשתמש מעדיף שעה אחרת; אם כן — עדכן את \`fixed_start\` בהתאם.
 3. המשתמש רוצה שהמשימה תחכה לתכנון — צור ללא \`fixed_start\` (המשימה תקובע כשהמשתמש יפעיל "בנה את היום").
 
-**הצגה בלוח הזמנים:** משימה עם \`fixed_start\` מופיעה אוטומטית בלוח ביום שלה — **אין צורך ב-"בנה את היום"**. משימה **ללא** \`fixed_start\` מוצגת רק לאחר הפעלת "בנה את היום". ציין זאת בתשובה למשתמש.`
+**הצגה בלוח הזמנים:** משימה עם \`fixed_start\` מופיעה אוטומטית בלוח ביום שלה — **אין צורך ב-"בנה את היום"**. משימה **ללא** \`fixed_start\` מוצגת רק לאחר הפעלת "בנה את היום". ציין זאת בתשובה למשתמש.
+
+**הזזת בלוקים:** אם \`move_block\` מחזיר התנגשות (result=error עם פירוט חפיפה) — הבלוק לא הוזז. דווח למשתמש בדיוק עם מי יש חפיפה ושאל כיצד להמשיך; אל תדווח שהזזת בהצלחה.`
 }
 
 async function executeTool(
@@ -336,9 +338,43 @@ async function executeTool(
     }
 
     if (name === 'move_block') {
+      const newStart = args.new_start_time as string
+      const newEnd = args.new_end_time as string
+      // Find the block's date so we only check same-day conflicts.
+      const { data: moving, error: movingErr } = await supabase
+        .from('schedule_blocks')
+        .select('id, date')
+        .eq('id', args.block_id)
+        .eq('user_id', userId)
+        .single()
+      if (movingErr) throw movingErr
+      // Detect overlap with any OTHER block on that day before moving.
+      const { data: others, error: othersErr } = await supabase
+        .from('schedule_blocks')
+        .select('id, title, start_time, end_time')
+        .eq('user_id', userId)
+        .eq('date', moving.date)
+        .neq('id', args.block_id)
+      if (othersErr) throw othersErr
+      const ns = hhmmToMin(newStart)
+      const ne = hhmmToMin(newEnd)
+      const conflicts = (others ?? []).filter((b) =>
+        ns < hhmmToMin(b.end_time as string) && hhmmToMin(b.start_time as string) < ne
+      )
+      if (conflicts.length > 0) {
+        const list = conflicts
+          .map((b) => `"${b.title}" (${(b.start_time as string).slice(0, 5)}–${(b.end_time as string).slice(0, 5)})`)
+          .join(', ')
+        return {
+          tool: name,
+          args,
+          result: 'error',
+          detail: `התנגשות: ${newStart.slice(0, 5)}–${newEnd.slice(0, 5)} חופף ל-${list}. אל תזיז את הבלוק — דווח למשתמש על ההתנגשות ושאל כיצד להמשיך (שעה אחרת / להזיז גם את הבלוק האחר / לבטל).`,
+        }
+      }
       const { error } = await supabase
         .from('schedule_blocks')
-        .update({ start_time: args.new_start_time, end_time: args.new_end_time })
+        .update({ start_time: newStart, end_time: newEnd })
         .eq('id', args.block_id)
         .eq('user_id', userId)
       if (error) throw error
@@ -373,4 +409,10 @@ async function executeTool(
   } catch (err) {
     return { tool: name, args, result: 'error', detail: String(err) }
   }
+}
+
+// Accepts "HH:MM" or "HH:MM:SS" and returns minutes since midnight.
+function hhmmToMin(t: string): number {
+  const [h, m] = t.split(':')
+  return parseInt(h) * 60 + parseInt(m)
 }
