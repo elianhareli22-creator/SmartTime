@@ -47,6 +47,18 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null)
   const [loadingInitial, setLoadingInitial] = useState(true)
 
+  // Mobile: toggle the session list open/closed
+  const [sidebarExpanded, setSidebarExpanded] = useState(false)
+
+  // Lock body scroll while this page is mounted so only .chat-messages scrolls
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -178,7 +190,15 @@ export default function Chat() {
         >
           + שיחה חדשה
         </button>
-        <ul className="chat-session-list">
+        <button
+          className="chat-sidebar-toggle"
+          onClick={() => setSidebarExpanded((v) => !v)}
+          aria-expanded={sidebarExpanded}
+        >
+          <span>שיחות קודמות</span>
+          <span className="chat-sidebar-toggle-arrow">{sidebarExpanded ? '▴' : '▾'}</span>
+        </button>
+        <ul className={`chat-session-list${sidebarExpanded ? ' chat-session-list--expanded' : ''}`}>
           {sessions.map((s) => {
             const isActive = !viewingSessionId && s.id === currentSessionId
             const isViewing = viewingSessionId === s.id
