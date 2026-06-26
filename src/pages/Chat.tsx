@@ -43,7 +43,6 @@ export default function Chat() {
 
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [titling, setTitling] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -98,18 +97,6 @@ export default function Chat() {
 
   async function handleNewChat() {
     if (!userId) return
-    setTitling(true)
-    try {
-      if (currentSessionId) {
-        await titleChatSession(currentSessionId)
-        const updated = await fetchSessions(userId)
-        setSessions(updated)
-      }
-    } catch {
-      // title generation failure is non-fatal; session stays untitled
-    } finally {
-      setTitling(false)
-    }
     localStorage.removeItem(STORAGE_KEY)
     setCurrentSessionId(null)
     setActiveMessages([GREETING])
@@ -127,6 +114,7 @@ export default function Chat() {
     setSending(true)
 
     let sessionId = currentSessionId
+    const isFirstMessage = !sessionId
 
     try {
       if (!sessionId) {
@@ -148,7 +136,15 @@ export default function Chat() {
       await appendMessage(sessionId, 'model', response.reply)
       setActiveMessages((prev) => [...prev, { role: 'model', text: response.reply }])
 
-      fetchSessions(userId).then(setSessions).catch(console.error)
+      if (isFirstMessage) {
+        // Title the session after the first exchange, then refresh sidebar
+        titleChatSession(sessionId)
+          .then(() => fetchSessions(userId))
+          .then(setSessions)
+          .catch(console.error)
+      } else {
+        fetchSessions(userId).then(setSessions).catch(console.error)
+      }
     } catch (err) {
       setError('שגיאה בשליחת ההודעה. נסה שוב.')
       console.error(err)
@@ -170,9 +166,9 @@ export default function Chat() {
         <button
           className="chat-new-btn"
           onClick={handleNewChat}
-          disabled={titling || sending}
+          disabled={sending}
         >
-          {titling ? '...' : '+ שיחה חדשה'}
+          + שיחה חדשה
         </button>
         <ul className="chat-session-list">
           {sessions.map((s) => {
