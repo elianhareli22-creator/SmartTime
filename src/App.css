@@ -724,6 +724,7 @@ html, body, #root {
   flex-direction: column;
   min-inline-size: 0;
   overflow: hidden;
+  background: var(--surface);
 }
 
 .chat-messages {
@@ -735,11 +736,6 @@ html, body, #root {
   gap: 0.65rem;
 }
 
-/* push messages to the bottom when there are few */
-.chat-messages::before {
-  content: '';
-  flex: 1;
-}
 
 .chat-loading {
   text-align: center;
