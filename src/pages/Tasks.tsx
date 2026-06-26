@@ -97,16 +97,18 @@ export default function Tasks() {
     <div className="page tasks-page">
       <div className="dashboard-header">
         <h2>המשימות שלי</h2>
+      </div>
+      <div className="tasks-toolbar">
+        <DateNav
+          date={selectedDate}
+          view="day"
+          onDateChange={setSelectedDate}
+          onViewChange={() => {}}
+        />
         <button className="btn-cta" onClick={handleBuild} disabled={generating}>
           {generating ? 'בונה את היום שלך...' : 'בנה את היום שלי'}
         </button>
       </div>
-      <DateNav
-        date={selectedDate}
-        view="day"
-        onDateChange={setSelectedDate}
-        onViewChange={() => {}}
-      />
       {error && <div className="error-banner">{error}</div>}
       {buildMsg && <div className="info-banner">{buildMsg}</div>}
       {unscheduled.length > 0 && (

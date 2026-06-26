@@ -342,6 +342,19 @@ html, body, #root {
 
 /* ── Tasks page ──────────────────────────────────────── */
 
+.tasks-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.tasks-toolbar .date-nav {
+  margin-bottom: 0;
+}
+
 .tasks-page .tasks-layout {
   display: flex;
   gap: 2rem;
@@ -653,11 +666,6 @@ html, body, #root {
   gap: 0.65rem;
 }
 
-/* push messages to the bottom when there are few of them */
-.chat-messages::before {
-  content: '';
-  flex: 1;
-}
 
 .chat-bubble {
   max-width: 68%;
