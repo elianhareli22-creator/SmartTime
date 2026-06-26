@@ -93,3 +93,14 @@ export async function moveTaskToDate(id: string, date: string): Promise<void> {
     .eq('id', id)
   if (error) throw error
 }
+
+export async function updateTaskFixedStart(
+  id: string,
+  fixed_start: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ fixed_start })
+    .eq('id', id)
+  if (error) throw error
+}
