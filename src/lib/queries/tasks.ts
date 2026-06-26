@@ -114,3 +114,14 @@ export async function fetchTaskById(id: string): Promise<Task> {
   if (error) throw error
   return data as Task
 }
+
+export async function fetchDoneTaskIdsForDate(userId: string, date: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('scheduled_date', date)
+    .eq('status', 'done')
+  if (error) throw error
+  return new Set((data as { id: string }[]).map(t => t.id))
+}
