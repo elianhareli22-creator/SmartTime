@@ -307,11 +307,6 @@ html, body, #root {
   padding: 3rem;
 }
 
-.loading-text {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
 /* ── Shared form ─────────────────────────────────────── */
 
 .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
