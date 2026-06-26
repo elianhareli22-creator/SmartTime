@@ -14,7 +14,7 @@ function timeGreeting(): string {
 
 export default function NavBar() {
   const { profile } = useAuth()
-  const { notifications, unreadCount, markAllRead } = useNotifications()
+  const { notifications, unreadCount, markAllRead, dismissNotification } = useNotifications()
   const [open, setOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
 
@@ -69,12 +69,21 @@ export default function NavBar() {
                     .sort((a, b) => b.firedAt.getTime() - a.firedAt.getTime())
                     .map(n => (
                     <li key={n.id} className={`bell-item${n.read ? '' : ' bell-item--unread'}`}>
-                      <span className="bell-item-title">{n.title}</span>
-                      <span className="bell-item-meta">
-                        {n.threshold === '10' ? '10 דקות לפני' : 'דקה אחת לפני'}
-                        {' · '}
-                        {n.firedAt.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div className="bell-item-body">
+                        <span className="bell-item-title">{n.title}</span>
+                        <span className="bell-item-meta">
+                          {n.threshold === '10' ? '10 דקות לפני' : 'דקה אחת לפני'}
+                          {' · '}
+                          {n.firedAt.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <button
+                        className="bell-item-dismiss"
+                        onClick={() => dismissNotification(n.id)}
+                        aria-label="סמן כנקרא והסר"
+                      >
+                        ✓
+                      </button>
                     </li>
                   ))}
                 </ul>

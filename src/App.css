@@ -699,6 +699,11 @@ html, body, #root {
 .chat-new-btn:hover:not(:disabled) { background: var(--accent-hover); }
 .chat-new-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* Mobile-only toggle button; hidden on desktop */
+.chat-sidebar-toggle {
+  display: none;
+}
+
 .chat-session-list {
   list-style: none;
   overflow-y: auto;
@@ -1317,47 +1322,71 @@ html, body, #root {
 
 @media (max-width: 600px) {
   .main-content { padding: 1.25rem 0.875rem; }
-  .navbar {
-    padding: 0 0.75rem;
-    height: auto;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: flex-start;
-  }
-  .navbar-start { flex-direction: column; gap: 0.3rem; width: 100%; }
-  .navbar-brand { font-size: 0.95rem; }
-  .navbar-user { display: none; }
-  .navbar-links {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    justify-content: flex-start;
-  }
-  .navbar-links a {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  .navbar-bell-btn { padding: 0.25rem; }
+  .navbar { padding: 0 1rem; }
+  .navbar-links { gap: 0; }
 
+  /* ── Chat mobile layout ── */
   .chat-page {
     flex-direction: column;
-    height: calc(100svh - 52px);
+    height: calc(100vh - 52px);
   }
+
+  /* Sidebar stacks above the chat area and sizes to its contents */
   .chat-sidebar {
     width: 100%;
     flex-shrink: 0;
     border-inline-end: none;
     border-block-end: 1px solid var(--border);
-    max-height: 200px;
+    overflow: hidden;
+  }
+
+  /* Toggle button: visible on mobile, between new-chat btn and session list */
+  .chat-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(100% - 1.5rem);
+    margin: 0 0.75rem 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .chat-sidebar-toggle:hover {
+    background: var(--paper);
+  }
+
+  .chat-sidebar-toggle-arrow {
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  /* Session list: collapsed by default on mobile */
+  .chat-session-list {
+    max-block-size: 0;
+    overflow: hidden;
+    transition: max-block-size 0.22s ease;
+  }
+
+  /* Session list: expanded when toggle is active */
+  .chat-session-list--expanded {
+    max-block-size: 240px;
     overflow-y: auto;
   }
+
+  /* Main area fills the remaining vertical space */
   .chat-main {
     flex: 1;
-    min-height: 0;
+    min-block-size: 0;
   }
-  .chat-bubble {
-    max-width: 90%;
-  }
+
+  .chat-bubble { max-width: 90%; }
 }
 
 /* ── Breaks section (Profile) ─────────────────────────── */
@@ -1634,8 +1663,8 @@ html, body, #root {
 
 .bell-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.6rem 1rem;
   border-block-end: 1px solid var(--border);
   transition: background 0.1s;
@@ -1649,6 +1678,14 @@ html, body, #root {
   background: rgba(30, 58, 95, 0.04);
 }
 
+.bell-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .bell-item-title {
   font-weight: 500;
   font-size: 0.875rem;
@@ -1658,4 +1695,23 @@ html, body, #root {
 .bell-item-meta {
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.bell-item-dismiss {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  flex-shrink: 0;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.bell-item-dismiss:hover {
+  color: var(--success);
+  background: #f0fdf4;
+  border-color: #bbf7d0;
 }

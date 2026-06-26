@@ -17,12 +17,14 @@ type NotificationContextValue = {
   notifications: AppNotification[]
   unreadCount: number
   markAllRead: () => void
+  dismissNotification: (id: string) => void
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
   markAllRead: () => {},
+  dismissNotification: () => {},
 })
 
 export function useNotifications() {
@@ -43,6 +45,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   function markAllRead() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  function dismissNotification(id: string) {
+    setNotifications(prev => prev.filter(n => n.id !== id))
   }
 
   const tick = useCallback(async () => {
@@ -96,7 +102,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [userId, tick])
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAllRead }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markAllRead, dismissNotification }}>
       {children}
     </NotificationContext.Provider>
   )
