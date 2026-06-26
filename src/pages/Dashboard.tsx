@@ -6,6 +6,7 @@ import DateNav from '../components/DateNav'
 import PendingTasksPanel from '../components/PendingTasksPanel'
 import WeekView from '../components/WeekView'
 import MonthView from '../components/MonthView'
+import Spinner from '../components/Spinner'
 import { fetchBlocksForDate, fetchBlocksForRange, generateSchedule, updateScheduleBlock } from '../lib/queries/schedule'
 import type { UnscheduledTask } from '../lib/queries/schedule'
 import { markTaskDone, markTaskPending, fetchPendingTasksForDate, updateTaskFixedStart } from '../lib/queries/tasks'
@@ -224,7 +225,7 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="loading-text">טוען...</div>
+        <div className="content-loader"><Spinner /></div>
       ) : view === 'day' ? (
         <>
           <PendingTasksPanel tasks={pendingTasks} />
