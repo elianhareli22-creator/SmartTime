@@ -1,5 +1,7 @@
 # SmartTime
 
+**Live:** [smart-time-gamma.vercel.app](https://smart-time-gamma.vercel.app/login)
+
 **AI-powered daily planner.** Add your tasks, press "Build my day", and Gemini arranges them into a conflict-free, time-blocked schedule — rendered as a pixel-precise time grid.
 
 ---
@@ -54,7 +56,6 @@ erDiagram
     text description
     int estimated_minutes
     text priority
-    timestamptz deadline
     time fixed_start
     text status
     date scheduled_date

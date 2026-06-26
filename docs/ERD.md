@@ -26,7 +26,6 @@ erDiagram
     text description
     int estimated_minutes
     text priority
-    timestamptz deadline
     time fixed_start
     text status
     date scheduled_date
